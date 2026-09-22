@@ -10,7 +10,7 @@ using TaskManager.Domain.Entities;
 
 namespace TaskManager.Application.Tasks.Commands.UpdateTaskDetails
 {
-    public class UpdateTaskDetailsCommandHandler(
+    public sealed class UpdateTaskDetailsCommandHandler(
         IApplicationDbContext db,
         ICurrentUserService currentUser)
         : IRequestHandler<UpdateTaskDetailsCommand, TaskDto>
@@ -32,10 +32,7 @@ namespace TaskManager.Application.Tasks.Commands.UpdateTaskDetails
 
            await db.SaveChangesAsync(ct);
 
-        return new TaskDto(
-            task.Id, task.Title, task.Description, task.Status, task.Priority,
-            task.LenientDeadline, task.StrictDeadline, task.IsRepetitive,
-            task.CreatedByUserId, task.AssignedToUserId);
+        return TaskDto.FromEntity(task);
         }
     }
 }

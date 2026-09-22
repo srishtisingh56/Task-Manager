@@ -21,9 +21,9 @@ namespace TaskManager.Application.Tasks.Queries.GetTasksForUser
             {
                 query = query.Where(t => t.CreatedByUserId == currentUser.UserId || t.AssignedToUserId == currentUser.UserId);
             }
-            if(request.StatusFilter.HasValue)
+            if(request.Status.HasValue)
             {
-                query = query.Where(t => t.Status == request.StatusFilter.Value);
+                query = query.Where(t => t.Status == request.Status.Value);
             }
 
             var totalCount = await query.CountAsync(ct);

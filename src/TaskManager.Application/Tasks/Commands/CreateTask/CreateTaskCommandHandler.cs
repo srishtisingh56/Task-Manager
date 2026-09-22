@@ -18,7 +18,7 @@ namespace TaskManager.Application.Tasks.Commands.CreateTask
     {
         public async Task<TaskDto> Handle(CreateTaskCommand request, CancellationToken ct)
         {
-            var creator = await db.Users.FindAsync([currentUser.UserId],ct)
+            var user = await db.Users.FindAsync([currentUser.UserId],ct)
                 ?? throw new NotFoundException(nameof(User), currentUser.UserId);
 
             if(request.AssignedToUserId != currentUser.UserId)
@@ -26,7 +26,7 @@ namespace TaskManager.Application.Tasks.Commands.CreateTask
                 var assignee = await db.Users.FindAsync([request.AssignedToUserId], ct)
                     ?? throw new NotFoundException(nameof(User), request.AssignedToUserId);
 
-                if(!creator.IsDirectManagerOf(assignee))
+                if(!user.IsDirectManagerOf(assignee))
                 {
                     throw new ForbiddenAccessException("You can only assign tasks to yourself or your direct reports.");
                 }
@@ -45,11 +45,7 @@ namespace TaskManager.Application.Tasks.Commands.CreateTask
 
             db.TaskItems.Add(task);
             await db.SaveChangesAsync(ct);
-            return new TaskDto(
-                task.Id,task.Title, task.Description, task.Status, task.Priority,
-                task.LenientDeadline, task.StrictDeadline, task.IsRepetitive,
-                task.CreatedByUserId, task.AssignedToUserId
-            );
+            return TaskDto.FromEntity(task);
         }
     }
 }

@@ -9,7 +9,7 @@ using TaskManager.Application.Tasks.Common;
 namespace TaskManager.Application.Tasks.Queries.GetTasksForUser
 {
     public sealed record GetTasksForUserQuery(
-        TaskItemStatus? StatusFilter,
+        TaskItemStatus? Status,
         int PageNumber = 1,
         int PageSize = 10
     ) : IRequest<PagedResult<TaskDto>>;

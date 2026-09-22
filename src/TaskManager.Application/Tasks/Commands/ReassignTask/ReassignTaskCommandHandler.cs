@@ -10,7 +10,7 @@ using TaskManager.Domain.Entities;
 
 namespace TaskManager.Application.Tasks.Commands.ReassignTask
 {
-    public class ReassignTaskCommandHandler(
+    public sealed class ReassignTaskCommandHandler(
         IApplicationDbContext db,
         ICurrentUserService currentUser
     ) : IRequestHandler<ReassignTaskCommand, TaskDto>
@@ -27,13 +27,13 @@ namespace TaskManager.Application.Tasks.Commands.ReassignTask
 
             if (request.NewAssigneeId != currentUser.UserId)
             {
-                var assigner = await db.Users.FindAsync([currentUser.UserId], ct)
+                var user = await db.Users.FindAsync([currentUser.UserId], ct)
                 ?? throw new NotFoundException(nameof(User), currentUser.UserId);
 
                 var newAssignee = await db.Users.FindAsync([request.NewAssigneeId], ct)
                 ?? throw new NotFoundException(nameof(User), request.NewAssigneeId);
 
-                if (!assigner.IsDirectManagerOf(newAssignee))
+                if (!user.IsDirectManagerOf(newAssignee))
                 {
                     throw new ForbiddenAccessException("Only a direct manager can reassign the task to this user");
                 }
@@ -41,11 +41,7 @@ namespace TaskManager.Application.Tasks.Commands.ReassignTask
             task.Reassign(request.NewAssigneeId);           
             await db.SaveChangesAsync(ct);
 
-            return new TaskDto(
-               task.Id, task.Title, task.Description, task.Status, task.Priority,
-               task.LenientDeadline, task.StrictDeadline, task.IsRepetitive,
-               task.CreatedByUserId, task.AssignedToUserId
-           );
+            return TaskDto.FromEntity(task);
         }
     }
 }

@@ -18,13 +18,16 @@ namespace TaskManager.Application.Tasks.Commands.UpdateTaskDetails
             {
                 RuleFor(x=>x.Title.Value)
                 .NotEmpty()
-                .MaximumLength(200);
+                .MaximumLength(200)
+                .WithMessage("Title must not exceed 200 characters.");
+                
             });
 
             When(x => x.Description.IsSet, () =>
             {
                 RuleFor(x=>x.Description.Value)
-                .MaximumLength(1000);
+                .MaximumLength(1000)
+                .WithMessage("Description must not exceed 1000 characters.");
                 //no NotEmpty() -> description can be set to null if IsSet is true (this was required to implement using Optional<>)
             });
 
