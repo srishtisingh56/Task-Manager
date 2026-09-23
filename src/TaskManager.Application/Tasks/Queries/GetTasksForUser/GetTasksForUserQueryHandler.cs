@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using TaskManager.Application.Common.Interfaces;
+using TaskManager.Application.Common.Models;
 using TaskManager.Application.Tasks.Common;
 
 namespace TaskManager.Application.Tasks.Queries.GetTasksForUser

@@ -7,6 +7,8 @@ using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using TaskManager.Application.Common.Behaviors;
+using TaskManager.Application.Users.Common.Interfaces;
+using TaskManager.Application.Users.Common.Services;
 
 namespace TaskManager.Application.Common
 {
@@ -23,7 +25,8 @@ namespace TaskManager.Application.Common
             services.AddValidatorsFromAssembly(assembly);
             //Register MediatR Pipeline to run ValidationBehavior
             services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
-
+            //Register ManagerHierarchyService to detect cycle in managers list
+            services.AddScoped<IManagerHierarchyService, ManagerHierarchyService>();
             return services;
         }
     }
