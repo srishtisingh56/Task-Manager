@@ -1,16 +1,15 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+
 using MediatR;
 using TaskManager.Application.Common.Exceptions;
 using TaskManager.Application.Common.Interfaces;
 using TaskManager.Application.Tasks.Common;
 using TaskManager.Domain.Entities;
+using TaskManager.Domain.Enums;
 
 namespace TaskManager.Application.Tasks.Commands.MarkTaskCompleted
 {
     public sealed class MarkTaskCompletedCommandHandler(
+        INotificationDispatcher notificationDispatcher,
         IApplicationDbContext db,
         ICurrentUserService currentUser
     ) : IRequestHandler<MarkTaskCompletedCommand, TaskDto>
@@ -28,6 +27,12 @@ namespace TaskManager.Application.Tasks.Commands.MarkTaskCompleted
             task.MarkCompleted();
             await db.SaveChangesAsync(ct);
             
+            if (task.AssignedToUserId != task.CreatedByUserId)
+            {
+                await notificationDispatcher.DispatchAsync(
+                    task.Id, task.CreatedByUserId, NotificationTriggerEvent.Completed, ct);
+            }
+
             return TaskDto.FromEntity(task);
 
         }

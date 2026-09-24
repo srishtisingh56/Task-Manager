@@ -6,10 +6,12 @@ using MediatR;
 using TaskManager.Application.Common.Exceptions;
 using TaskManager.Application.Common.Interfaces;
 using TaskManager.Domain.Entities;
+using TaskManager.Domain.Enums;
 
 namespace TaskManager.Application.Tasks.Commands.DeleteTaskCommand
 {
     public sealed class DeleteTaskCommandHandler(
+        INotificationDispatcher notificationDispatcher,
         IApplicationDbContext db,
         ICurrentUserService currentUser
     )
@@ -27,7 +29,16 @@ namespace TaskManager.Application.Tasks.Commands.DeleteTaskCommand
 
             task.Delete();
             await db.SaveChangesAsync(ct);
-
+            
+            if(task.AssignedToUserId != currentUser.UserId)
+            {
+                await notificationDispatcher.DispatchAsync(
+                    taskId: task.Id,
+                    recipientUserId: task.AssignedToUserId,
+                    triggerEvent: NotificationTriggerEvent.Deleted,
+                    ct: ct
+                );
+            }
             return Unit.Value;
         }
     }

@@ -8,10 +8,12 @@ using TaskManager.Application.Common.Exceptions;
 using TaskManager.Application.Common.Interfaces;
 using TaskManager.Application.Tasks.Common;
 using TaskManager.Domain.Entities;
+using TaskManager.Domain.Enums;
 
 namespace TaskManager.Application.Tasks.Commands.CreateTask
 {
     public sealed class CreateTaskCommandHandler(
+        INotificationDispatcher notificationDispatcher,
         IApplicationDbContext db,
         ICurrentUserService currentUser)
         : IRequestHandler<CreateTaskCommand, TaskDto>
@@ -45,6 +47,16 @@ namespace TaskManager.Application.Tasks.Commands.CreateTask
 
             db.TaskItems.Add(task);
             await db.SaveChangesAsync(ct);
+            
+            if(task.AssignedToUserId != currentUser.UserId)
+            {
+                await notificationDispatcher.DispatchAsync(
+                    taskId: task.Id,
+                    recipientUserId: task.AssignedToUserId,
+                    triggerEvent: NotificationTriggerEvent.Created,
+                    ct: ct
+                );
+            }
             return TaskDto.FromEntity(task);
         }
     }

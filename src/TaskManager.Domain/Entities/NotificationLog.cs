@@ -13,7 +13,7 @@ namespace TaskManager.Domain.Entities
 /// </summary>
     public sealed class NotificationLog : Entity
     {
-        public Guid NotificationRuleId { get; private set; }
+        public Guid? NotificationRuleId { get; private set; }
         public Guid TaskId { get; private set; }
         public Guid RecipientUserId { get; private set; }
         public NotificationChannel Channel { get; private set; }
@@ -26,7 +26,7 @@ namespace TaskManager.Domain.Entities
 
         private NotificationLog(
             Guid id,
-            Guid notificationRuleId,
+            Guid? notificationRuleId,
             Guid taskId,
             Guid recipientUserId, 
             NotificationChannel channel, 
@@ -43,12 +43,13 @@ namespace TaskManager.Domain.Entities
         }
 
         public static NotificationLog RecordAttempt(
-            Guid notificationRuleId,
+            Guid? notificationRuleId,
             Guid taskId,
             Guid recipientUserId, 
             NotificationChannel channel, 
             DateTime sentAt)
         {
+            //notificationRuleId can be null but not Guid.Empty (must have non-zero values if set)
             if(notificationRuleId == Guid.Empty)
                 throw new ArgumentException("Notification rule ID cannot be empty.", nameof(notificationRuleId));
             if(taskId == Guid.Empty)

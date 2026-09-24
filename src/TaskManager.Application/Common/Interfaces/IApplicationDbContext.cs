@@ -8,7 +8,7 @@ namespace TaskManager.Application.Common.Interfaces
         DbSet<User> Users { get; }
         DbSet<TaskItem> TaskItems { get; }
         DbSet<NotificationLog> NotificationLogs { get; }
-        DbSet<NotificationRule> NotificationRules { get; }
+        DbSet<Domain.Entities.NotificationRule> NotificationRules { get; }
         Task<int> SaveChangesAsync(CancellationToken cancellationToken);
     }
 }

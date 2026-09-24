@@ -7,10 +7,12 @@ using TaskManager.Application.Common.Exceptions;
 using TaskManager.Application.Common.Interfaces;
 using TaskManager.Application.Tasks.Common;
 using TaskManager.Domain.Entities;
+using TaskManager.Domain.Enums;
 
 namespace TaskManager.Application.Tasks.Commands.UpdateTaskDetails
 {
     public sealed class UpdateTaskDetailsCommandHandler(
+        INotificationDispatcher notificationDispatcher,
         IApplicationDbContext db,
         ICurrentUserService currentUser)
         : IRequestHandler<UpdateTaskDetailsCommand, TaskDto>
@@ -31,6 +33,16 @@ namespace TaskManager.Application.Tasks.Commands.UpdateTaskDetails
             task.UpdateDetails(title,description,priority);
 
            await db.SaveChangesAsync(ct);
+
+            if(task.AssignedToUserId != currentUser.UserId)
+            {
+                await notificationDispatcher.DispatchAsync(
+                    taskId: task.Id,
+                    recipientUserId: task.AssignedToUserId,
+                    triggerEvent: NotificationTriggerEvent.Updated,
+                    ct: ct
+                );
+            }
 
         return TaskDto.FromEntity(task);
         }

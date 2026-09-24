@@ -7,6 +7,7 @@ using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using TaskManager.Application.Common.Behaviors;
+using TaskManager.Application.Common.Interfaces;
 using TaskManager.Application.Users.Common.Interfaces;
 using TaskManager.Application.Users.Common.Services;
 
@@ -27,6 +28,7 @@ namespace TaskManager.Application.Common
             services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
             //Register ManagerHierarchyService to detect cycle in managers list
             services.AddScoped<IManagerHierarchyService, ManagerHierarchyService>();
+            // services.AddSingleton<IDateTime,DateTimeService>();
             return services;
         }
     }
