@@ -1,10 +1,7 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using TaskManager.Application.Common.Interfaces;
 
-namespace TaskManager.Infrastructure
+namespace TaskManager.Infrastructure.Services
 {
     public class DateTimeService : IDateTime
     {

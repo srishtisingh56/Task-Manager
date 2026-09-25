@@ -28,8 +28,8 @@ namespace TaskManager.Application.Common
             services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
             //Register ManagerHierarchyService to detect cycle in managers list
             services.AddScoped<IManagerHierarchyService, ManagerHierarchyService>();
-            // services.AddScoped<INotificationDispatcher, NotificationDispatcher>();
-            // services.AddSingleton<IDateTime,DateTimeService>();
+            // IDateTime, ICurrentUserService, INotificationDispatcher and IApplicationDbContext
+            // are registered by Infrastructure's AddInfrastructure() — concrete implementations live there.
             return services;
         }
     }
