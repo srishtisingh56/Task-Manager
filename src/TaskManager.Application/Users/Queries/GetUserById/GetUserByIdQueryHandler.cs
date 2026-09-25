@@ -18,25 +18,29 @@ namespace TaskManager.Application.Users.Queries.GetUserById
     {
         public async Task<UserDto> Handle(GetUserByIdQuery request, CancellationToken ct)
         {
-            var user = await db.Users
+            var targetUser = await db.Users
                 .AsNoTracking()
                 .Where(u => u.Id == request.UserId)
-                //UserDto.FromEntity can cause error in runtime -> convert to u=>new UserDto{..} format
-                .Select(u => UserDto.FromEntity(u))
+                .Select(u => new UserDto(u.Id, u.Name, u.Email, u.PhoneNumber, u.ManagerId, u.IsSystemAdmin))
                 .FirstOrDefaultAsync(ct)
                 ?? throw new NotFoundException(nameof(User), request.UserId);
 
             // Self, your own direct manager, your own direct workers, or an
             // admin can view a profile.
-            var isSelf = user.Id == currentUser.UserId;
-            var isRelated = user.ManagerId == currentUser.UserId; // viewing your own direct worker
+            var isSelf = targetUser.Id == currentUser.UserId;
+            var isRelated = targetUser.ManagerId == currentUser.UserId; // viewing your own direct worker
 
-            if (!isSelf && !isRelated && !currentUser.IsSystemAdmin)
+            var self = await db.Users.FindAsync([currentUser.UserId], ct)
+                ?? throw new NotFoundException(nameof(User), currentUser.UserId);
+
+            var isMyManager = self.ManagerId == targetUser.Id;
+
+            if (!currentUser.IsSystemAdmin && !isSelf && !isRelated && !isMyManager)
             {
                 throw new ForbiddenAccessException("You do not have access to view this user.");
             }
 
-            return user;
+            return targetUser;
         }
     }
 }

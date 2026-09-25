@@ -34,16 +34,14 @@ namespace TaskManager.Application.Tasks.Commands.UpdateTaskDetails
 
            await db.SaveChangesAsync(ct);
 
-            if(task.AssignedToUserId != currentUser.UserId)
-            {
-                await notificationDispatcher.DispatchAsync(
-                    taskId: task.Id,
-                    recipientUserId: task.AssignedToUserId,
-                    triggerEvent: NotificationTriggerEvent.Updated,
-                    ct: ct
-                );
-            }
-
+           
+            await notificationDispatcher.DispatchAsync(
+                taskId: task.Id,
+                recipientUserId: task.AssignedToUserId,
+                triggerEvent: NotificationTriggerEvent.Updated,
+                ct: ct
+            );
+            
         return TaskDto.FromEntity(task);
         }
     }

@@ -48,15 +48,14 @@ namespace TaskManager.Application.Tasks.Commands.CreateTask
             db.TaskItems.Add(task);
             await db.SaveChangesAsync(ct);
             
-            if(task.AssignedToUserId != currentUser.UserId)
-            {
-                await notificationDispatcher.DispatchAsync(
-                    taskId: task.Id,
-                    recipientUserId: task.AssignedToUserId,
-                    triggerEvent: NotificationTriggerEvent.Created,
-                    ct: ct
-                );
-            }
+        
+            await notificationDispatcher.DispatchAsync(
+                taskId: task.Id,
+                recipientUserId: task.AssignedToUserId,
+                triggerEvent: NotificationTriggerEvent.Created,
+                ct: ct
+            );
+            
             return TaskDto.FromEntity(task);
         }
     }

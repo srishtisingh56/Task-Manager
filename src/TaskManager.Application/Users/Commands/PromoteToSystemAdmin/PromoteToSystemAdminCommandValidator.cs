@@ -7,7 +7,8 @@ namespace TaskManager.Application.Users.Commands.PromoteToSystemAdmin
     {
         public PromoteToSystemAdminCommandValidator()
         {
-            RuleFor(x => x.UserId).NotEmpty().WithMessage("User Id is required.");
+            RuleFor(x => x.UserId)
+            .NotEmpty().WithMessage("User Id is required.");
         }
     }
 }

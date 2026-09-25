@@ -32,7 +32,13 @@ namespace TaskManager.Application.NotificationRules.Commands.UpdateSchedule
             var offsetUnit = request.OffsetUnit.GetValueOrExisting(rule.OffsetUnit);
             var repeatMode = request.RepeatMode.GetValueOrExisting(rule.RepeatMode);
 
-        //    rule.UpdateSchedule(
+           rule.UpdateSchedule(
+              triggerEvent,
+              offsetUnit,
+              offsetValue,
+              repeatMode
+              
+           );
             await db.SaveChangesAsync(ct);
 
             return NotificationRuleDto.FromEntity(rule);

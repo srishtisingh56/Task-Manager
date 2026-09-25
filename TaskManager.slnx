@@ -2,5 +2,6 @@
   <Folder Name="/src/">
     <Project Path="src/TaskManager.Domain/TaskManager.Domain.csproj" />
     <Project Path="src/TaskManager.Application/TaskManager.Application.csproj" />
+    <Project Path="src/TaskManager.Infrastructure/TaskManager.Infrastructure.csproj" />
   </Folder>
 </Solution>

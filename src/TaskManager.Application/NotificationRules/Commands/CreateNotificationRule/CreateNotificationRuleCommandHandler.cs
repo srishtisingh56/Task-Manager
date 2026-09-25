@@ -25,8 +25,7 @@ namespace TaskManager.Application.NotificationRules.Commands.CreateNotificationR
                 triggerEvent: request.TriggerEvent,
                 offsetValue: request.OffsetValue,
                 offsetUnit: request.OffsetUnit,
-                repeatMode: request.RepeatMode,
-                channel: request.Channel);
+                repeatMode: request.RepeatMode);
 
             db.NotificationRules.Add(rule);
             await db.SaveChangesAsync(ct);

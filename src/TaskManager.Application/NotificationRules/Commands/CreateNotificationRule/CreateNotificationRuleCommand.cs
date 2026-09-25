@@ -10,6 +10,7 @@ namespace TaskManager.Application.NotificationRules.Commands.CreateNotificationR
     NotificationTriggerEvent TriggerEvent,
     int? OffsetValue,
     NotificationOffsetUnit? OffsetUnit,
-    NotificationRepeatMode RepeatMode,
-    NotificationChannel Channel) : IRequest<NotificationRuleDto>;
+    NotificationRepeatMode RepeatMode
+    // NotificationChannel Channel
+    ) : IRequest<NotificationRuleDto>;
 }

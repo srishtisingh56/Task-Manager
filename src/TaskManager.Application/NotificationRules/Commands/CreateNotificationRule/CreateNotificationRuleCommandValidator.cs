@@ -21,17 +21,20 @@ namespace TaskManager.Application.NotificationRules.Commands.CreateNotificationR
             
             RuleFor(x => x.RepeatMode)
              .IsInEnum()
-             .WithMessage("Invalid Notification Repeat Mode");
-            
-            RuleFor(x => x.Channel)
-             .IsInEnum()
-             .WithMessage("Invalid Notification Channel");
+             .WithMessage("Invalid Notification Repeat Mode")
+             .Must((command, repeatMode) => repeatMode != NotificationRepeatMode.Repeat
+                                             || command.TriggerEvent == NotificationTriggerEvent.AfterCreationOffset)
+             .WithMessage("Only the 'AfterCreationOffset' trigger event can use RepeatMode.Repeat.");
 
             RuleFor(x => x.OffsetValue)
+            .NotNull()
+            .WithMessage("Offset value must not be null.")
             .GreaterThan(0)
             .WithMessage("Offset value must be greater than 0.");
 
             RuleFor(x => x.OffsetUnit)
+            .NotNull()
+            .WithMessage("Offset unit must not be null.")
             .IsInEnum()
             .WithMessage("Invalid Offset Unit.");
         }

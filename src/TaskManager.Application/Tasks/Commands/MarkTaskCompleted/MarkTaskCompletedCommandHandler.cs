@@ -27,11 +27,12 @@ namespace TaskManager.Application.Tasks.Commands.MarkTaskCompleted
             task.MarkCompleted();
             await db.SaveChangesAsync(ct);
             
-            if (task.AssignedToUserId != task.CreatedByUserId)
-            {
-                await notificationDispatcher.DispatchAsync(
-                    task.Id, task.CreatedByUserId, NotificationTriggerEvent.Completed, ct);
-            }
+            await notificationDispatcher.DispatchAsync(
+                taskId: task.Id,
+                recipientUserId: task.CreatedByUserId,
+                triggerEvent: NotificationTriggerEvent.Completed,
+                ct: ct
+            );
 
             return TaskDto.FromEntity(task);
 

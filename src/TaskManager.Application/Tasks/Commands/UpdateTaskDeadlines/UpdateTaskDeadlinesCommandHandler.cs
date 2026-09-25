@@ -4,10 +4,12 @@ using TaskManager.Application.Common.Exceptions;
 using TaskManager.Application.Common.Interfaces;
 using TaskManager.Application.Tasks.Common;
 using TaskManager.Domain.Entities;
+using TaskManager.Domain.Enums;
 
 namespace TaskManager.Application.Tasks.Commands.UpdateTaskDeadlines
 {
     public sealed class UpdateTaskDeadlinesCommandHandler(
+        INotificationDispatcher notificationDispatcher,
         IApplicationDbContext db,
         ICurrentUserService currentUser
     ):IRequestHandler<UpdateTaskDeadlinesCommand, TaskDto>
@@ -27,6 +29,13 @@ namespace TaskManager.Application.Tasks.Commands.UpdateTaskDeadlines
             task.UpdateDeadlines(lenientDeadline, strictDeadline);
 
             await db.SaveChangesAsync(ct);
+
+            await notificationDispatcher.DispatchAsync(
+                taskId: task.Id,
+                recipientUserId: task.AssignedToUserId,
+                triggerEvent: NotificationTriggerEvent.Updated,
+                ct: ct
+            );
 
             return TaskDto.FromEntity(task);
         }

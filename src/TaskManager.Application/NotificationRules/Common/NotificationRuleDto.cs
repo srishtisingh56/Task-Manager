@@ -13,8 +13,7 @@ namespace TaskManager.Application.NotificationRules.Common
         NotificationTriggerEvent TriggerEvent,
         int? OffsetValue,
         NotificationOffsetUnit? OffsetUnit,
-        NotificationRepeatMode RepeatMode,
-        NotificationChannel Channel
+        NotificationRepeatMode RepeatMode
     )
     {
         public static NotificationRuleDto FromEntity(Domain.Entities.NotificationRule rule) =>
@@ -24,8 +23,7 @@ namespace TaskManager.Application.NotificationRules.Common
                 rule.TriggerEvent,
                 rule.OffsetValue,
                 rule.OffsetUnit,
-                rule.RepeatMode,
-                rule.Channel
+                rule.RepeatMode
             );
     }
 }

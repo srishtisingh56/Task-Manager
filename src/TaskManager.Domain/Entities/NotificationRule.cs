@@ -11,7 +11,7 @@ namespace TaskManager.Domain.Entities
     public sealed class NotificationRule : Entity
     {
         public Guid TaskId { get; private set; }
-        public NotificationChannel Channel { get; private set; }
+        // public NotificationChannel Channel { get; private set; }
         public NotificationTriggerEvent TriggerEvent { get; private set; }
         public NotificationOffsetUnit? OffsetUnit { get; private set; }
         public int? OffsetValue { get; private set; }
@@ -31,7 +31,7 @@ namespace TaskManager.Domain.Entities
         private NotificationRule(
             Guid id,
             Guid taskId,
-            NotificationChannel channel,
+            // NotificationChannel channel,
             NotificationTriggerEvent triggerEvent,
             NotificationOffsetUnit? offsetUnit,
             int? offsetValue,
@@ -39,7 +39,7 @@ namespace TaskManager.Domain.Entities
         ) : base(id)
         {
             TaskId = taskId;
-            Channel = channel;
+            // Channel = channel;
             TriggerEvent = triggerEvent;
             OffsetUnit = offsetUnit;
             OffsetValue = offsetValue;
@@ -59,22 +59,22 @@ namespace TaskManager.Domain.Entities
                 if (offsetValue is null or <= 0 || offsetUnit is null)
                     throw new InvalidNotificationRuleException(
                         $"TriggerEvent '{triggerEvent}' requires a positive OffsetValue and an OffsetUnit.");
+
+                // Only "after creation" reminders may repeat; deadline warnings fire once.
+                if (repeatMode == NotificationRepeatMode.Repeat && triggerEvent != NotificationTriggerEvent.AfterCreationOffset)
+                    throw new InvalidNotificationRuleException(
+                        $"TriggerEvent '{triggerEvent}' cannot use RepeatMode.Repeat.");
             }
             else
             {
-                if (offsetValue is not null || offsetUnit is not null)
-                    throw new InvalidNotificationRuleException(
-                        $"TriggerEvent '{triggerEvent}' fires immediately and must not specify an offset.");
-
-                if (repeatMode == NotificationRepeatMode.Repeat)
-                    throw new InvalidNotificationRuleException(
-                        $"TriggerEvent '{triggerEvent}' is a one-time event and cannot be repeating event.");
+                throw new InvalidNotificationRuleException(
+                    $"Immediate events cannot be scheduled with an offset.");
             }
         }
         
         public static NotificationRule Create(
             Guid taskId,
-            NotificationChannel channel,
+            // NotificationChannel channel,
             NotificationTriggerEvent triggerEvent,
             NotificationOffsetUnit? offsetUnit,
             int? offsetValue,
@@ -89,7 +89,7 @@ namespace TaskManager.Domain.Entities
             return new NotificationRule(
                 Guid.NewGuid(),
                 taskId,
-                channel,
+                // channel,
                 triggerEvent,
                 offsetUnit,
                 offsetValue,
@@ -110,11 +110,6 @@ namespace TaskManager.Domain.Entities
             OffsetValue = offsetValue;
             RepeatMode = repeatMode;
         }
-
-        public void UpdateChannel(NotificationChannel channel)
-        {
-            Channel = channel;
-        }
         
         public DateTime? CalculateFireTime(DateTime referencePointUtc)
         {
@@ -134,7 +129,7 @@ namespace TaskManager.Domain.Entities
                 NotificationTriggerEvent.BeforeLenientDeadline => referencePointUtc - offset,
                 NotificationTriggerEvent.BeforeStrictDeadline => referencePointUtc - offset,
                 NotificationTriggerEvent.AfterCreationOffset => referencePointUtc + offset,
-                _ => null
+                _ => throw new InvalidNotificationRuleException($"Unsupported trigger event '{TriggerEvent}'.")
             };
         }
     }

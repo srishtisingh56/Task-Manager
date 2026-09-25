@@ -6,7 +6,8 @@ namespace TaskManager.Application.Users.Commands.DemoteFromSystemAdmin
     {
         public DemoteFromSystemAdminCommandValidator()
         {
-            RuleFor(x => x.UserId).NotEmpty().WithMessage("User Id is required.");
+            RuleFor(x => x.UserId)
+            .NotEmpty().WithMessage("User Id is required.");
         }
     }
 }

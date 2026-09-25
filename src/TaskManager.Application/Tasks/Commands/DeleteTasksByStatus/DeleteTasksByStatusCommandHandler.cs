@@ -5,11 +5,14 @@ using System.Threading.Tasks;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using TaskManager.Application.Common.Interfaces;
+using TaskManager.Domain.Enums;
 namespace TaskManager.Application.Tasks.Commands.DeleteTasksByStatus
 {
     public sealed class DeleteTasksByStatusCommandHandler(
+        INotificationDispatcher notificationDispatcher,
         IApplicationDbContext db,
         ICurrentUserService currentUser
+        
     )
     : IRequestHandler<DeleteTasksByStatusCommand, int>
     {
@@ -27,6 +30,16 @@ namespace TaskManager.Application.Tasks.Commands.DeleteTasksByStatus
             }
             
             await db.SaveChangesAsync(ct);
+            
+            foreach(var task in tasksToDelete)
+            {
+                await notificationDispatcher.DispatchAsync(
+                    taskId: task.Id,
+                    recipientUserId: task.AssignedToUserId,
+                    triggerEvent: NotificationTriggerEvent.Deleted,
+                    ct: ct
+                );
+            }
             return tasksToDelete.Count;  
         }
     }

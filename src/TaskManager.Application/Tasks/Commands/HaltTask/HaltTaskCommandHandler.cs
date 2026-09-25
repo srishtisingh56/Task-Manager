@@ -27,7 +27,7 @@ namespace TaskManager.Application.Tasks.Commands.HaltTask
             }
             task.Halt();
             await db.SaveChangesAsync(ct);
-
+            
             return TaskDto.FromEntity(task);
         }
     }

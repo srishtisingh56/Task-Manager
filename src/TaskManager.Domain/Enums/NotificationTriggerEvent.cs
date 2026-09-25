@@ -8,6 +8,7 @@ namespace TaskManager.Domain.Enums
         Completed = 3,
         AfterCreationOffset = 4,
         BeforeLenientDeadline = 5,
-        BeforeStrictDeadline = 6
+        BeforeStrictDeadline = 6,
+        StrictDeadlinePassed = 7
     }
 }
