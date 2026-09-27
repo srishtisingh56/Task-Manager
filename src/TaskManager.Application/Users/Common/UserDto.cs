@@ -12,7 +12,8 @@ namespace TaskManager.Application.Users.Common
         string Email,
         string PhoneNumber,
         Guid? ManagerId,
-        bool IsSystemAdmin
+        bool IsSystemAdmin,
+        bool IsActive
     )
     {
         public static UserDto FromEntity(User user)
@@ -23,7 +24,8 @@ namespace TaskManager.Application.Users.Common
                 user.Email,
                 user.PhoneNumber,
                 user.ManagerId,
-                user.IsSystemAdmin
+                user.IsSystemAdmin,
+                user.IsActive
             );
         }
     }

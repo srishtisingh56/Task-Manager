@@ -15,7 +15,7 @@ namespace TaskManager.Infrastructure.Persistence.Configurations
                 .HasMaxLength(200);
 
             builder.Property(t => t.Description)
-                .HasMaxLength(2000);
+                .HasMaxLength(1000);
 
             builder.Property(t => t.Status)
                 .IsRequired()
@@ -40,8 +40,8 @@ namespace TaskManager.Infrastructure.Persistence.Configurations
             builder.HasIndex(t => t.CreatedByUserId);
             builder.HasIndex(t => t.AssignedToUserId);
             builder.HasIndex(t => t.IsDeleted);
-
-            builder.HasQueryFilter(t => !t.IsDeleted);
+            builder.HasIndex(t => new { t.Status, t.StrictDeadline });
+            builder.HasIndex(t => new { t.Status, t.LenientDeadline });     
         }
     }
 }

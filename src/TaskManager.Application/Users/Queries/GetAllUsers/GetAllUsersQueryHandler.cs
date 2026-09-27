@@ -24,10 +24,11 @@ namespace TaskManager.Application.Users.Queries.GetAllUsers
         var totalCount = await query.CountAsync(ct);
 
         var items = await query
+            .Where(u => u.IsActive)
             .OrderBy(u => u.Name)
             .Skip((request.PageNumber - 1) * request.PageSize)
             .Take(request.PageSize)
-            .Select(u => new UserDto(u.Id, u.Name, u.Email, u.PhoneNumber, u.ManagerId, u.IsSystemAdmin))
+            .Select(u => new UserDto(u.Id, u.Name, u.Email, u.PhoneNumber, u.ManagerId, u.IsSystemAdmin, u.IsActive))
             .ToListAsync(ct);
 
         return new PagedResult<UserDto>(items, totalCount, request.PageNumber, request.PageSize);

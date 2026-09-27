@@ -63,8 +63,19 @@ namespace TaskManager.Infrastructure.Services
                     log.MarkFailed();
                 }
             }
+            try
+            {
+                await _db.SaveChangesAsync(ct);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex,
+                    "Failed to save notification logs for task {TaskId} to user {UserId}",
+                    taskId, recipientUserId);
+                throw;
+            }
 
-            await _db.SaveChangesAsync(ct);
+            
         }
 
         private Task SendAsync(
@@ -102,3 +113,4 @@ namespace TaskManager.Infrastructure.Services
         }
     }
 }
+

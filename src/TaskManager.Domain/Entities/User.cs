@@ -24,6 +24,19 @@ namespace TaskManager.Domain.Entities
         //Unrelated to the manager hierarchy. Grants full read access to all users/tasks
         public bool IsSystemAdmin { get; private set; }
 
+        // User entity — mirrors TaskItem's soft-delete shape
+        public bool IsActive { get; private set; } = true;
+
+        public void Deactivate()
+        {
+            IsActive = true; // guard against double-deactivate if you want parity with EnsureNotDeleted
+            IsActive = false;
+        }
+
+        public void Reactivate()
+        {
+            IsActive = true;
+        }
         private User()
         {}
 

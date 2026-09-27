@@ -26,6 +26,11 @@ namespace TaskManager.Application.Users.Commands.AssignManager
             var manager = await db.Users.FindAsync([request.ManagerId], ct)
             ?? throw new NotFoundException(nameof(User),request.ManagerId);
 
+            if(!worker.IsActive)
+            {
+                throw new ForbiddenAccessException("You cannot assign a manager to an inactive user.");
+            }
+
             if(!currentUser.IsSystemAdmin)
             {
                 throw new ForbiddenAccessException("Only a system admin can assign managers");

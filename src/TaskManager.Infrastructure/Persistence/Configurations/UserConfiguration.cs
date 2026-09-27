@@ -23,7 +23,7 @@ namespace TaskManager.Infrastructure.Persistence.Configurations
 
             builder.Property(u => u.PhoneNumber)
                 .IsRequired()
-                .HasMaxLength(30);
+                .HasMaxLength(10);
 
             // Self-referencing manager hierarchy; Restrict avoids deleting a manager's whole reporting chain.
             builder.HasOne<User>()

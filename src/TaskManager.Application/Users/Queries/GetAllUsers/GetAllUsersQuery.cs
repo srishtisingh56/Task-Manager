@@ -11,6 +11,4 @@ namespace TaskManager.Application.Users.Queries.GetAllUsers
    public sealed record GetAllUsersQuery(
     int PageNumber = 1,
     int PageSize = 20) : IRequest<PagedResult<UserDto>>;
-
-   
 }

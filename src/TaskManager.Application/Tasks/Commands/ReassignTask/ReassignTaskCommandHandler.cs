@@ -35,6 +35,11 @@ namespace TaskManager.Application.Tasks.Commands.ReassignTask
                 var newAssignee = await db.Users.FindAsync([request.NewAssigneeId], ct)
                 ?? throw new NotFoundException(nameof(User), request.NewAssigneeId);
 
+                if(!newAssignee.IsActive)
+                {
+                    throw new ForbiddenAccessException("You cannot reassign task to an inactive user.");
+                }
+
                 if (!user.IsDirectManagerOf(newAssignee))
                 {
                     throw new ForbiddenAccessException("Only a direct manager can reassign the task to this user");

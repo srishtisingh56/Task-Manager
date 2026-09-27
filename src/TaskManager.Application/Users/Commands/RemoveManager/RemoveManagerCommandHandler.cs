@@ -16,6 +16,10 @@ namespace TaskManager.Application.Users.Commands.RemoveManager
         var worker = await db.Users.FindAsync([request.WorkerId], ct)
             ?? throw new NotFoundException(nameof(User), request.WorkerId);
 
+        if(!worker.IsActive)
+        {
+            throw new ForbiddenAccessException("You cannot perform this operation on an inactive user.");
+        }
         if (!currentUser.IsSystemAdmin)
         {
             throw new ForbiddenAccessException("Only a system admin can remove manager relationships.");

@@ -28,7 +28,7 @@ namespace TaskManager.Domain.Entities
         public Guid AssignedToUserId { get; private set; }
         public bool IsDeleted { get; private set; }
         public DateTime? DeletedAt { get; private set; }
-
+        public DateTime CreatedAt { get; private set; }
         private TaskItem() { }
 
         private TaskItem(
@@ -40,7 +40,8 @@ namespace TaskManager.Domain.Entities
             DateTime strictDeadline,
             bool isRepetitive,
             Guid createdByUserId,
-            Guid assignedToUserId)
+            Guid assignedToUserId,
+            DateTime createdAt)
             : base(id)  
         {
             Title = title;
@@ -52,6 +53,7 @@ namespace TaskManager.Domain.Entities
             CreatedByUserId = createdByUserId;
             AssignedToUserId = assignedToUserId;
             Status = TaskItemStatus.Pending;
+            CreatedAt = createdAt;
         }
 
         //left:check that lenient and strict deadline should not be empty 
@@ -66,7 +68,9 @@ namespace TaskManager.Domain.Entities
             bool isRepetitive,
             Guid createdByUserId,
             Guid assignedToUserId,
-            TaskPriority? priority = null)
+            DateTime createdAt,
+            TaskPriority? priority = null
+            )
         {
             title = title?.Trim() ?? string.Empty;
 
@@ -96,7 +100,8 @@ namespace TaskManager.Domain.Entities
                 strictDeadline,
                 isRepetitive,
                 createdByUserId,
-                assignedToUserId);
+                assignedToUserId,
+                createdAt);
         }
         /// <summary>
         /// Validates that the lenient deadline is earlier than the strict deadline.

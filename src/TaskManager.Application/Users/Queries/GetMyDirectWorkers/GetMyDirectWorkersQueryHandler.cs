@@ -22,7 +22,7 @@ namespace TaskManager.Application.Users.Queries.GetMyDirectWorkers
         // needed here since the filter itself enforces scope.
         return await db.Users
             .AsNoTracking()
-            .Where(u => u.ManagerId == currentUser.UserId)
+            .Where(u => u.IsActive && u.ManagerId == currentUser.UserId)
             .Select(u => new WorkerDto(u.Id, u.Name))
             .ToListAsync(ct);
     }

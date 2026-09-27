@@ -22,6 +22,10 @@ namespace TaskManager.Application.Users.Commands.DemoteFromSystemAdmin
             var user = await db.Users.FindAsync([request.UserId], ct)
                 ?? throw new NotFoundException(nameof(User), request.UserId);
 
+            if (!user.IsActive)
+            {
+                throw new ForbiddenAccessException("You cannot perform this operation on an inactive user.");
+            }
             user.DemoteFromSystemAdmin();
 
             await db.SaveChangesAsync(ct);

@@ -15,7 +15,8 @@ namespace TaskManager.Application.Tasks.Commands.CreateTask
     public sealed class CreateTaskCommandHandler(
         INotificationDispatcher notificationDispatcher,
         IApplicationDbContext db,
-        ICurrentUserService currentUser)
+        ICurrentUserService currentUser,
+        IDateTime dateTime)
         : IRequestHandler<CreateTaskCommand, TaskDto>
     {
         public async Task<TaskDto> Handle(CreateTaskCommand request, CancellationToken ct)
@@ -27,7 +28,11 @@ namespace TaskManager.Application.Tasks.Commands.CreateTask
             {
                 var assignee = await db.Users.FindAsync([request.AssignedToUserId], ct)
                     ?? throw new NotFoundException(nameof(User), request.AssignedToUserId);
-
+                
+                if(!assignee.IsActive)
+                {
+                    throw new ForbiddenAccessException("You cannot assign a task to an inactive user.");
+                }
                 if(!user.IsDirectManagerOf(assignee))
                 {
                     throw new ForbiddenAccessException("You can only assign tasks to yourself or your direct reports.");
@@ -42,7 +47,8 @@ namespace TaskManager.Application.Tasks.Commands.CreateTask
                 lenientDeadline:request.LenientDeadline,
                 strictDeadline:request.StrictDeadline,
                 isRepetitive:request.IsRepetitive,
-                priority:request.Priority
+                priority:request.Priority,
+                createdAt:dateTime.UtcNow
             );
 
             db.TaskItems.Add(task);

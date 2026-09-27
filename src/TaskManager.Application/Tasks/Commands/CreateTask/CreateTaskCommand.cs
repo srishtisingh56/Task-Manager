@@ -14,5 +14,6 @@ namespace TaskManager.Application.Tasks.Commands.CreateTask
     DateTime LenientDeadline,
     DateTime StrictDeadline,
     bool IsRepetitive,
-    Guid AssignedToUserId) : IRequest<TaskDto>;
+    Guid AssignedToUserId,
+    DateTime CreatedAt) : IRequest<TaskDto>;
 }
