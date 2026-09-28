@@ -25,6 +25,10 @@ namespace TaskManager.Infrastructure.Persistence.Configurations
                 .IsRequired()
                 .HasMaxLength(10);
 
+            builder.Property(u => u.PasswordHash)
+                .IsRequired()
+                .HasMaxLength(200);
+
             // Self-referencing manager hierarchy; Restrict avoids deleting a manager's whole reporting chain.
             builder.HasOne<User>()
                 .WithMany()

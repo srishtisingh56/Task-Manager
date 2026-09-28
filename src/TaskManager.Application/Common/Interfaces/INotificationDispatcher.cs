@@ -12,7 +12,8 @@ namespace TaskManager.Application.Common.Interfaces
             Guid taskId,
             Guid recipientUserId,
             NotificationTriggerEvent triggerEvent,
-            CancellationToken ct
+            CancellationToken ct,
+            Guid? notificationRuleId = null
         );
     }
 }

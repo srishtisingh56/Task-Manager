@@ -12,7 +12,8 @@ namespace TaskManager.Application.Users.Commands.CreateUser
 {
     public class CreateUserCommandHandler(
         IApplicationDbContext db,
-        ICurrentUserService currentUser
+        ICurrentUserService currentUser,
+        IPasswordHasher passwordHasher
     ): IRequestHandler<CreateUserCommand, UserDto>
     {
         public async Task<UserDto> Handle(CreateUserCommand request, CancellationToken ct)
@@ -21,7 +22,8 @@ namespace TaskManager.Application.Users.Commands.CreateUser
             {
                 throw new ForbiddenAccessException("Only a system admin can create users");
             }
-            var user = User.Create(request.Name, request.Email, request.PhoneNumber);
+            var passwordHash = passwordHasher.Hash(request.Password);
+            var user = User.Create(request.Name, request.Email, request.PhoneNumber, passwordHash);
             db.Users.Add(user);
             await db.SaveChangesAsync(ct);
 

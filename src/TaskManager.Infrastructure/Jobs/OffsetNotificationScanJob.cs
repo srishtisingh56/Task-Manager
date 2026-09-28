@@ -1,3 +1,4 @@
+using Hangfire;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using TaskManager.Application.Common.Interfaces;
@@ -25,6 +26,7 @@ public class OffsetNotificationScanJob
         _logger = logger;
     }
 
+   [DisableConcurrentExecution(timeoutInSeconds: 300)]
    public async Task RunAsync(CancellationToken ct)
 {
     var now = _dateTime.UtcNow;
@@ -35,7 +37,7 @@ public class OffsetNotificationScanJob
 
     var taskIds = rules.Select(r => r.TaskId).Distinct().ToList();
     var tasks = await _db.TaskItems
-        .Where(t => taskIds.Contains(t.Id) && t.Status != TaskItemStatus.Completed)
+        .Where(t => !t.IsDeleted  && taskIds.Contains(t.Id) && t.Status != TaskItemStatus.Completed)
         .ToDictionaryAsync(t => t.Id, ct);
 
     foreach (var rule in rules)

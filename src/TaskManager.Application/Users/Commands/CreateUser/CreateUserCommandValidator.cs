@@ -27,6 +27,14 @@ namespace TaskManager.Application.Users.Commands.CreateUser
             .WithMessage("Phone number must not be empty")
             .MaximumLength(10)
             .WithMessage("Phone number must not exceed 10 characters");
+
+            RuleFor(x => x.Password)
+            .NotEmpty()
+            .WithMessage("Password must not be empty")
+            .MinimumLength(8)
+            .WithMessage("Password must be at least 8 characters long")
+            .MaximumLength(100)
+            .WithMessage("Password must not exceed 100 characters");
         }
     }
 

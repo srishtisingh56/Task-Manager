@@ -13,6 +13,7 @@ namespace TaskManager.Domain.Entities
         public string Name { get; private set; } = null!;
         public string Email { get; private set; } = null!;
         public string PhoneNumber { get; private set; } = null!;
+        public string PasswordHash { get; private set; } = null!;
 
         //It exists to catch obviously malformed input at the domain boundary.
         private static readonly Regex EmailPattern =
@@ -29,7 +30,6 @@ namespace TaskManager.Domain.Entities
 
         public void Deactivate()
         {
-            IsActive = true; // guard against double-deactivate if you want parity with EnsureNotDeleted
             IsActive = false;
         }
 
@@ -40,17 +40,18 @@ namespace TaskManager.Domain.Entities
         private User()
         {}
 
-        private User(Guid id,string name, string email, string phoneNumber)
+        private User(Guid id,string name, string email, string phoneNumber, string passwordHash)
         : base(id)
         {
             Name = name;
             Email = email;
             PhoneNumber = phoneNumber;
+            PasswordHash = passwordHash;
             IsSystemAdmin = false;
             ManagerId = null;
         }
 
-        public static User Create(string name, string email, string phoneNumber)
+        public static User Create(string name, string email, string phoneNumber, string passwordHash)
         {
             name = name?.Trim() ?? string.Empty;
             email = email?.Trim() ?? string.Empty;
@@ -65,7 +66,19 @@ namespace TaskManager.Domain.Entities
             if (string.IsNullOrWhiteSpace(phoneNumber))
                 throw new ArgumentException("Phone number cannot be empty.", nameof(phoneNumber));
 
-            return new User(Guid.NewGuid(), name, email, phoneNumber);
+            if (string.IsNullOrWhiteSpace(passwordHash))
+                throw new ArgumentException("Password hash cannot be empty.", nameof(passwordHash));
+
+            return new User(Guid.NewGuid(), name, email, phoneNumber, passwordHash);
+        }
+
+        // passwordHash must already be hashed by the caller (Application/Infrastructure) — Domain never sees plaintext.
+        public void SetPassword(string passwordHash)
+        {
+            if (string.IsNullOrWhiteSpace(passwordHash))
+                throw new ArgumentException("Password hash cannot be empty.", nameof(passwordHash));
+
+            PasswordHash = passwordHash;
         }
 
         public void UpdateContactDetails(string name, string email, string phoneNumber)

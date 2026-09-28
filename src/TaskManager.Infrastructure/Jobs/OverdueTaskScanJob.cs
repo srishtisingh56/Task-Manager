@@ -1,3 +1,4 @@
+using Hangfire;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using TaskManager.Application.Common.Interfaces;
@@ -24,13 +25,15 @@ public class OverdueTaskScanJob
         _logger = logger;
     }
 
+    [DisableConcurrentExecution(timeoutInSeconds: 300)]
     public async Task RunAsync(CancellationToken ct)
     {
         var now = _dateTime.UtcNow;
 
         var overdueTasks = await _db.TaskItems
-            .Where(t => (t.Status == TaskItemStatus.Pending || t.Status == TaskItemStatus.Halted)
-                        && t.StrictDeadline < now)
+        .Where(t => !t.IsDeleted    
+            && (t.Status == TaskItemStatus.Pending || t.Status == TaskItemStatus.Halted)
+            && t.StrictDeadline < now)
             .ToListAsync(ct);
 
         if (overdueTasks.Count == 0)

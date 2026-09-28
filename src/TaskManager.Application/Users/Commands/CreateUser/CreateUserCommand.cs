@@ -10,6 +10,7 @@ namespace TaskManager.Application.Users.Commands.CreateUser
   public sealed record CreateUserCommand(
     string Name,
     string Email,
-    string PhoneNumber
+    string PhoneNumber,
+    string Password
     ) : IRequest<UserDto>;
 }

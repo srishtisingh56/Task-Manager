@@ -36,18 +36,19 @@ namespace TaskManager.Infrastructure.Services
             Guid taskId,
             Guid recipientUserId,
             NotificationTriggerEvent triggerEvent,
-            CancellationToken ct)
+            CancellationToken ct,
+            Guid? notificationRuleId = null)
         {
             var recipient = await _db.Users.AsNoTracking()
                 .FirstOrDefaultAsync(u => u.Id == recipientUserId, ct);
-            if (recipient is null)
-                return; // recipient no longer exists; nothing to deliver
+            if (recipient is null || !recipient.IsActive)
+                return; // recipient gone or deactivated; nothing to deliver
 
             var channels = ChannelPolicy.GetChannels(triggerEvent);
 
             foreach (var channel in channels)
             {
-                var log = NotificationLog.RecordAttempt(null, taskId, recipientUserId, channel, _dateTime.UtcNow);
+                var log = NotificationLog.RecordAttempt(notificationRuleId, taskId, triggerEvent, recipientUserId, channel, _dateTime.UtcNow);
                 _db.NotificationLogs.Add(log);
 
                 try
@@ -74,8 +75,6 @@ namespace TaskManager.Infrastructure.Services
                     taskId, recipientUserId);
                 throw;
             }
-
-            
         }
 
         private Task SendAsync(

@@ -15,7 +15,8 @@ namespace TaskManager.Domain.Entities
     {
         public Guid? NotificationRuleId { get; private set; }
         public Guid TaskId { get; private set; }
-        public Guid RecipientUserId { get; private set; }
+        public NotificationTriggerEvent TriggerEvent { get; private set; }
+         public Guid RecipientUserId { get; private set; }
         public NotificationChannel Channel { get; private set; }
         public DateTime SentAt { get; private set; }
         public NotificationDeliveryStatus DeliveryStatus { get; private set; }
@@ -28,6 +29,7 @@ namespace TaskManager.Domain.Entities
             Guid id,
             Guid? notificationRuleId,
             Guid taskId,
+            NotificationTriggerEvent triggerEvent,
             Guid recipientUserId, 
             NotificationChannel channel, 
             DateTime sentAt, 
@@ -36,6 +38,7 @@ namespace TaskManager.Domain.Entities
         {
             NotificationRuleId = notificationRuleId;
             TaskId = taskId;
+            TriggerEvent = triggerEvent;
             RecipientUserId = recipientUserId;
             Channel = channel;
             SentAt = sentAt;
@@ -45,6 +48,7 @@ namespace TaskManager.Domain.Entities
         public static NotificationLog RecordAttempt(
             Guid? notificationRuleId,
             Guid taskId,
+            NotificationTriggerEvent triggerEvent,
             Guid recipientUserId, 
             NotificationChannel channel, 
             DateTime sentAt)
@@ -63,6 +67,7 @@ namespace TaskManager.Domain.Entities
                 Guid.NewGuid(),
                 notificationRuleId,
                 taskId,
+                triggerEvent,
                 recipientUserId,
                 channel,
                 sentAt,

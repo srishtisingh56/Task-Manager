@@ -21,7 +21,7 @@ namespace TaskManager.Application.Users.Queries.GetUserById
             var targetUser = await db.Users
                 .AsNoTracking()
                 .Where(u => u.Id == request.UserId)
-                .Select(u => new UserDto(u.Id, u.Name, u.Email, u.PhoneNumber, u.ManagerId, u.IsSystemAdmin))
+                .Select(u => new UserDto(u.Id, u.Name, u.Email, u.PhoneNumber, u.ManagerId, u.IsSystemAdmin,u.IsActive))
                 .FirstOrDefaultAsync(ct)
                 ?? throw new NotFoundException(nameof(User), request.UserId);
 
