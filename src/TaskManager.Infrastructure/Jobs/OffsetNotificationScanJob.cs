@@ -85,7 +85,7 @@ public class OffsetNotificationScanJob
     {
         try
         {
-            await _dispatcher.DispatchAsync(task.Id, task.AssignedToUserId, rule.TriggerEvent, ct);
+            await _dispatcher.DispatchAsync(task.Id, task.AssignedToUserId, rule.TriggerEvent, ct, rule.Id);
         }
         catch (Exception ex)
         {

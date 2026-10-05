@@ -118,6 +118,7 @@ namespace TaskManager.Domain.Entities
             
             TimeSpan offset = OffsetUnit.Value switch
             {
+                NotificationOffsetUnit.Minutes => TimeSpan.FromMinutes(OffsetValue.Value),
                 NotificationOffsetUnit.Hours => TimeSpan.FromHours(OffsetValue.Value),
                 NotificationOffsetUnit.Days => TimeSpan.FromDays(OffsetValue.Value),
                 NotificationOffsetUnit.Week => TimeSpan.FromDays(7 * OffsetValue.Value),

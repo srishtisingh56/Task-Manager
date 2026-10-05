@@ -1,9 +1,11 @@
 using System.Text;
+using System.Text.Json.Serialization;
 using Hangfire;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.Authorization;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using TaskManager.Application.Common;          // adjust to the namespace of your AddApplication()
 using TaskManager.Application.Common.Interfaces;
@@ -37,12 +39,22 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
-// Deny-by-default: every endpoint requires auth unless marked [AllowAnonymous].
-builder.Services.AddControllers(options =>
-    options.Filters.Add(new AuthorizeFilter()));
-builder.Services.AddOpenApi(); // built-in in .NET 9+/10, no Swashbuckle needed
+builder.Services.AddAuthorization();
+
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
+
+// Deny-by-default: every endpoint requires auth unless marked [AllowAnonymous].
+builder.Services.AddControllers(options =>
+    options.Filters.Add(new AuthorizeFilter()))
+    .AddJsonOptions(options =>
+     {
+         options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+         options.JsonSerializerOptions.Converters.Add(new OptionalJsonConverterFactory());
+     });
+
+builder.Services.AddOpenApi(); // built-in in .NET 9+/10, no Swashbuckle needed
+
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())

@@ -39,7 +39,15 @@ namespace TaskManager.Domain.Exceptions
     public sealed class TaskAlreadyCompletedException : DomainException
     {
         public TaskAlreadyCompletedException(Guid taskId) 
-        : base($"Task {taskId} has already been completed and cannot be reassigned.")
+        : base($"Task {taskId} has already been completed and cannot be updated or reassigned.")
+        {
+        }
+    }
+
+    public sealed class TaskAlreadyOverdueException : DomainException
+    {
+        public TaskAlreadyOverdueException(Guid taskId) 
+        : base($"Task {taskId} is already overdue and cannot be modified.")
         {
         }
     }

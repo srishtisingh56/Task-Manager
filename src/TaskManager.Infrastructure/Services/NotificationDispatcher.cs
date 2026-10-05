@@ -94,21 +94,34 @@ namespace TaskManager.Infrastructure.Services
             };
         }
 
-        private async Task SendEmailAsync(string toAddress, Guid taskId, NotificationTriggerEvent triggerEvent, CancellationToken ct)
+    private async Task SendEmailAsync(string toAddress, Guid taskId, NotificationTriggerEvent triggerEvent, CancellationToken ct)
+    {
+        var friendlyEvent = triggerEvent switch
         {
-            using var message = new MailMessage(_emailSettings.FromAddress, toAddress)
-            {
-                Subject = $"Task notification: {triggerEvent}",
-                Body = $"Task {taskId} triggered event '{triggerEvent}'."
-            };
+            NotificationTriggerEvent.Completed => "Task completed",
+            NotificationTriggerEvent.StrictDeadlinePassed => "Task is now overdue",
+            NotificationTriggerEvent.Created => "New task assigned to you",
+            NotificationTriggerEvent.Updated => "Task updated",
+            NotificationTriggerEvent.Deleted => "Task deleted",
+            NotificationTriggerEvent.BeforeLenientDeadline => "Deadline reminder",
+            NotificationTriggerEvent.BeforeStrictDeadline => "Deadline approaching soon",
+            NotificationTriggerEvent.AfterCreationOffset => "Task reminder",
+            _ => "Task update"
+        };
 
-            using var client = new SmtpClient(_emailSettings.Host, _emailSettings.Port)
-            {
-                EnableSsl = _emailSettings.EnableSsl,
-                Credentials = new NetworkCredential(_emailSettings.Username, _emailSettings.Password)
-            };
+        using var message = new MailMessage(_emailSettings.FromAddress, toAddress)
+        {
+            Subject = $"TaskFlow — {friendlyEvent}",
+            Body = $"Hello,\n\n{friendlyEvent}.\n\nTask reference: {taskId}\n\nThis is an automated notification from TaskFlow."
+        };
 
-            await client.SendMailAsync(message, ct);
+        using var client = new SmtpClient(_emailSettings.Host, _emailSettings.Port)
+        {
+            EnableSsl = _emailSettings.EnableSsl,
+            Credentials = new NetworkCredential(_emailSettings.Username, _emailSettings.Password)
+        };
+
+        await client.SendMailAsync(message, ct);
         }
     }
 }

@@ -4,7 +4,7 @@ using TaskManager.Application.Common.Interfaces;
 using TaskManager.Application.NotificationRules.Common;
 
 namespace TaskManager.Application.NotificationRules.Commands.CreateNotificationRule
-    {
+{
         public sealed class CreateNotificationRuleCommandHandler(
         IApplicationDbContext db,
         ICurrentUserService currentUser

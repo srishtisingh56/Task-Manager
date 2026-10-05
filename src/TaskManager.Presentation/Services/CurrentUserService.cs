@@ -15,11 +15,18 @@ namespace TaskManager.Presentation.Services
     {
         private ClaimsPrincipal? Principal => accessor.HttpContext?.User;
 
-        public Guid UserId =>
-            Guid.TryParse(Principal?.FindFirst(JwtRegisteredClaimNames.Sub)?.Value, out var id)
+      public Guid UserId
+    {
+        get
+        {
+            var value = Principal?.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
+                ?? Principal?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            return Guid.TryParse(value, out var id)
                 ? id
                 : throw new UnauthorizedException("No authenticated user.");
-
+        }
+    }
         public bool IsSystemAdmin =>
             bool.TryParse(Principal?.FindFirst("is_admin")?.Value, out var isAdmin) && isAdmin;
     }

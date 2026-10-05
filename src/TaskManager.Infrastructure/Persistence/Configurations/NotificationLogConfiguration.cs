@@ -40,6 +40,11 @@ namespace TaskManager.Infrastructure.Persistence.Configurations
                 .HasForeignKey(l => l.NotificationRuleId)
                 .OnDelete(DeleteBehavior.SetNull);
 
+            builder.Property(l => l.TriggerEvent)
+                .IsRequired()
+                .HasConversion<string>()
+                .HasMaxLength(30);
+                
             builder.HasIndex(l => l.TaskId);
             builder.HasIndex(l => l.RecipientUserId);
         }

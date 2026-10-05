@@ -132,6 +132,15 @@ namespace TaskManager.Domain.Entities
         {
             EnsureNotDeleted();
 
+
+            if(Status == TaskItemStatus.Completed)
+            {
+                throw new TaskAlreadyCompletedException(Id);
+            }
+            if(Status == TaskItemStatus.Overdue)
+            {
+                throw new TaskAlreadyOverdueException(Id);
+            }
             title = title?.Trim() ?? string.Empty;
             if (string.IsNullOrWhiteSpace(title))
             {
@@ -148,6 +157,14 @@ namespace TaskManager.Domain.Entities
         public void UpdateDeadlines(DateTime lenientDeadline, DateTime strictDeadline)
         {
             EnsureNotDeleted();
+            if(Status == TaskItemStatus.Completed)
+            {
+                throw new TaskAlreadyCompletedException(Id);
+            }
+            if(Status == TaskItemStatus.Overdue)
+            {
+                throw new TaskAlreadyOverdueException(Id);
+            }
             ValidateDeadlines(lenientDeadline, strictDeadline);
             LenientDeadline = lenientDeadline;
             StrictDeadline = strictDeadline;
@@ -158,6 +175,14 @@ namespace TaskManager.Domain.Entities
         public void SetRepetitive(bool isRepetitive)
         {
             EnsureNotDeleted();
+            if(Status == TaskItemStatus.Completed)
+            {
+                throw new TaskAlreadyCompletedException(Id);
+            }
+            if(Status == TaskItemStatus.Overdue)
+            {
+                throw new TaskAlreadyOverdueException(Id);
+            }
             IsRepetitive = isRepetitive;
         }
         /// <summary>
