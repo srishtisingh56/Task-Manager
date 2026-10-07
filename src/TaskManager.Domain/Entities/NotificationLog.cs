@@ -16,7 +16,7 @@ namespace TaskManager.Domain.Entities
         public Guid? NotificationRuleId { get; private set; }
         public Guid TaskId { get; private set; }
         public NotificationTriggerEvent TriggerEvent { get; private set; }
-         public Guid RecipientUserId { get; private set; }
+        public Guid RecipientUserId { get; private set; }
         public NotificationChannel Channel { get; private set; }
         public DateTime SentAt { get; private set; }
         public NotificationDeliveryStatus DeliveryStatus { get; private set; }

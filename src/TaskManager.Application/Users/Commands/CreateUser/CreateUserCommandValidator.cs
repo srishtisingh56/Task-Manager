@@ -25,6 +25,8 @@ namespace TaskManager.Application.Users.Commands.CreateUser
             RuleFor(x => x.PhoneNumber)
             .NotEmpty()
             .WithMessage("Phone number must not be empty")
+            .Matches(@"^\d{10}$")
+            .WithMessage("Phone number must be 10 digits")
             .MaximumLength(10)
             .WithMessage("Phone number must not exceed 10 characters");
 

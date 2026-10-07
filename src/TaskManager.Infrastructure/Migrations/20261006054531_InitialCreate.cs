@@ -19,6 +19,7 @@ namespace TaskManager.Infrastructure.Migrations
                     Name = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
                     Email = table.Column<string>(type: "character varying(320)", maxLength: 320, nullable: false),
                     PhoneNumber = table.Column<string>(type: "character varying(10)", maxLength: 10, nullable: false),
+                    PasswordHash = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
                     ManagerId = table.Column<Guid>(type: "uuid", nullable: true),
                     IsSystemAdmin = table.Column<bool>(type: "boolean", nullable: false),
                     IsActive = table.Column<bool>(type: "boolean", nullable: false)
@@ -98,6 +99,7 @@ namespace TaskManager.Infrastructure.Migrations
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     NotificationRuleId = table.Column<Guid>(type: "uuid", nullable: true),
                     TaskId = table.Column<Guid>(type: "uuid", nullable: false),
+                    TriggerEvent = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false),
                     RecipientUserId = table.Column<Guid>(type: "uuid", nullable: false),
                     Channel = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
                     SentAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),

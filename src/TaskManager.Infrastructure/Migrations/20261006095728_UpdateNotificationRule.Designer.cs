@@ -12,8 +12,8 @@ using TaskManager.Infrastructure.Persistence;
 namespace TaskManager.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260928092318_AddPasswordHashToUsers")]
-    partial class AddPasswordHashToUsers
+    [Migration("20261006095728_UpdateNotificationRule")]
+    partial class UpdateNotificationRule
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -53,8 +53,10 @@ namespace TaskManager.Infrastructure.Migrations
                     b.Property<Guid>("TaskId")
                         .HasColumnType("uuid");
 
-                    b.Property<int>("TriggerEvent")
-                        .HasColumnType("integer");
+                    b.Property<string>("TriggerEvent")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
 
                     b.HasKey("Id");
 
@@ -96,6 +98,9 @@ namespace TaskManager.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("TaskId");
+
+                    b.HasIndex("TaskId", "TriggerEvent")
+                        .IsUnique();
 
                     b.ToTable("NotificationRules");
                 });

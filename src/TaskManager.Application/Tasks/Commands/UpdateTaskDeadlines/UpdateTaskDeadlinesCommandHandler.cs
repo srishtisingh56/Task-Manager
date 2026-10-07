@@ -1,5 +1,6 @@
 
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 using TaskManager.Application.Common.Exceptions;
 using TaskManager.Application.Common.Interfaces;
 using TaskManager.Application.Tasks.Common;
@@ -24,6 +25,13 @@ namespace TaskManager.Application.Tasks.Commands.UpdateTaskDeadlines
                 throw new ForbiddenAccessException("Only the creator of the task can update its deadlines.");
             }
 
+            var hasStaleOnceRules = await db.NotificationRules
+            .Where(r => r.TaskId == task.Id
+                && r.RepeatMode == NotificationRepeatMode.Once
+                && (r.TriggerEvent == NotificationTriggerEvent.BeforeLenientDeadline
+                    || r.TriggerEvent == NotificationTriggerEvent.BeforeStrictDeadline))
+            .AnyAsync(r => db.NotificationLogs.Any(l => l.NotificationRuleId == r.Id), ct);
+
             var lenientDeadline = request.LenientDeadline.GetValueOrExisting(task.LenientDeadline);
             var strictDeadline = request.StrictDeadline.GetValueOrExisting(task.StrictDeadline);
             task.UpdateDeadlines(lenientDeadline, strictDeadline);
@@ -37,7 +45,10 @@ namespace TaskManager.Application.Tasks.Commands.UpdateTaskDeadlines
                 ct: ct
             );
 
-            return TaskDto.FromEntity(task);
-        }
+            var dto = TaskDto.FromEntity(task);
+            return hasStaleOnceRules
+                ? dto with { Warning = "Deadlines changed. Existing 'before deadline' reminders already sent won't resend — delete and re-add them if you need a new reminder for the updated time." }
+                : dto;
+                }
     }
 }

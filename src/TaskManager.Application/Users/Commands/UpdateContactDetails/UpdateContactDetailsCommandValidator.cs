@@ -26,7 +26,10 @@ namespace TaskManager.Application.Users.Commands.UpdateContactDetails
 
             When(x => x.PhoneNumber.IsSet, () =>
                 RuleFor(x => x.PhoneNumber.Value)
-                .NotEmpty().WithMessage("Phone number must not be empty")
+                .NotEmpty()
+                .WithMessage("Phone number must not be empty")
+                .Matches(@"^\d{10}$")
+                .WithMessage("Phone number must be 10 digits")
                 .MaximumLength(10).WithMessage("Phone number must not exceed 10 characters"));
         }
     }

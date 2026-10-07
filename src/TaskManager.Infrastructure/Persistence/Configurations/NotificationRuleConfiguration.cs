@@ -31,6 +31,8 @@ namespace TaskManager.Infrastructure.Persistence.Configurations
                 .OnDelete(DeleteBehavior.Cascade);
 
             builder.HasIndex(r => r.TaskId);
+            builder.HasIndex(r=>new { r.TaskId, r.TriggerEvent })
+                .IsUnique();
         }
     }
 }

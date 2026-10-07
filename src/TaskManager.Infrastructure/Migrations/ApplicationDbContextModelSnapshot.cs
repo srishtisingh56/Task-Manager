@@ -50,8 +50,10 @@ namespace TaskManager.Infrastructure.Migrations
                     b.Property<Guid>("TaskId")
                         .HasColumnType("uuid");
 
-                    b.Property<int>("TriggerEvent")
-                        .HasColumnType("integer");
+                    b.Property<string>("TriggerEvent")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
 
                     b.HasKey("Id");
 
@@ -93,6 +95,9 @@ namespace TaskManager.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("TaskId");
+
+                    b.HasIndex("TaskId", "TriggerEvent")
+                        .IsUnique();
 
                     b.ToTable("NotificationRules");
                 });

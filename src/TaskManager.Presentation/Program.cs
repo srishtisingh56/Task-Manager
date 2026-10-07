@@ -14,6 +14,7 @@ using TaskManager.Infrastructure.Jobs;  // RegisterRecurringJobs()
 using TaskManager.Infrastructure.Persistence;
 using TaskManager.Presentation.ExceptionHandling;
 using TaskManager.Presentation.Services;
+using TaskManager.Presentation.Startup;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -73,5 +74,6 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Services.RegisterRecurringJobs();
+await app.SeedUsersAsync();
 
 app.Run();

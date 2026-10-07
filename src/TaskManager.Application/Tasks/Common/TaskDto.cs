@@ -17,7 +17,8 @@ namespace TaskManager.Application.Tasks.Common
      DateTime StrictDeadline,
      bool IsRepetitive,
      Guid CreatedByUserId,
-     Guid AssignedToUserId
+     Guid AssignedToUserId,
+     string? Warning = null
     )
     {
         public static TaskDto FromEntity(TaskItem task) => new(

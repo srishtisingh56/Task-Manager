@@ -22,6 +22,9 @@ namespace TaskManager.Application.NotificationRules.Queries.GetNotificationRules
             var task = await db.TaskItems.FindAsync([request.TaskId], ct)
                 ?? throw new NotFoundException(nameof(TaskItem), request.TaskId);
 
+            if (task is null || task.IsDeleted)
+                throw new NotFoundException(nameof(TaskItem), request.TaskId);
+
             // Notification rules are the creator's reminder configuration, not assignee-facing.
             if (task.CreatedByUserId != currentUser.UserId && !currentUser.IsSystemAdmin)
             {
@@ -43,7 +46,7 @@ namespace TaskManager.Application.NotificationRules.Queries.GetNotificationRules
                 totalCount,
                 request.PageNumber,
                 request.PageSize
-            );
+            );  
         }
     }
 }

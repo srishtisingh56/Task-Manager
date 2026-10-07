@@ -1,25 +1,19 @@
 # TaskManager — Domain Layer Summary
 
-**Status:** Complete (v1). This document is the reference for everything
-decided in the Domain layer so future chats building Application,
-Infrastructure, and API don't have to re-derive it — and so any new
-decision can be checked against what's already here instead of silently
-conflicting with it.
+**Status:** Complete (v1), with mid-project additions and decisions incorporated. This is the reference for Domain-layer design so Application, Infrastructure, and Presentation work does not re-derive or contradict established rules.
 
-Pair this with `project-context.md` (overall project scope/stack) — this
-file is the detailed record of *how the Domain layer specifically* was
-built, including reasoning that isn't in `project-context.md`.
+Pair with `project-context.md`, `application_layer.md`, `infrastructure_layer.md`, and `presentation_layer.md`.
 
 ---
 
-## 1. Project structure so far
+## 1. Project structure
 
-```
+```text
 TaskManager/
   TaskManager.slnx
   src/
     TaskManager.Domain/
-      TaskManager.Domain.csproj      — zero package/project references, by design
+      TaskManager.Domain.csproj   # net10.0; zero package/project references
       Common/
         Entity.cs
       Enums/
@@ -38,213 +32,163 @@ TaskManager/
       Exceptions/
         DomainException.cs
         InvalidTaskDeadlineException.cs
-        InvalidTaskStateTransitionException.cs   (also holds TaskAlreadyDeletedException,
-                                                    TaskNotDeletedException, TaskAlreadyCompletedException)
+        InvalidTaskStateTransitionException.cs
+        TaskAlreadyDeletedException.cs
+        TaskNotDeletedException.cs
+        TaskAlreadyCompletedException.cs
+        TaskAlreadyOverdueException.cs
         SelfManagementException.cs
         InvalidNotificationRuleException.cs
 ```
 
-Target framework: `net10.0` (adjust in the `.csproj` if your installed SDK differs — nothing here is version-specific).
-
 ---
 
-## 2. Core design principles (apply these consistently in later layers)
+## 2. Core design principles
 
-1. **Rich domain model, not anemic.** Every entity property has a `private`
-   setter. Entities are never mutated by assigning properties directly —
-   only through named methods that express business intent
-   (`task.MarkCompleted()`, not `task.Status = Completed`).
+1. **Rich domain model.** Entity properties have `private` setters. State changes happen through business methods (`MarkCompleted()`, `Halt()`, etc.), never direct property assignment.
 
-2. **Construction only through static factory methods** (`User.Create(...)`,
-   `TaskItem.Create(...)`, `NotificationRule.Create(...)`,
-   `NotificationLog.RecordAttempt(...)`). No public constructors. This
-   guarantees an entity can never exist in memory in an invalid state.
+2. **Factories only.** Entities have no public constructors; creation uses static factories. This prevents invalid in-memory entities.
 
-3. **Identity-based equality.** All entities inherit `Entity` (see
-   `Common/Entity.cs`), which implements `Equals`/`GetHashCode` based on
-   `Id` + concrete type, not property values. `Id` is a `Guid`, generated
-   in the factory method (client-side), not by the database — so an entity
-   has a real, stable identity the moment it's created in C#, before
-   `SaveChanges()` runs.
+3. **Identity equality.** All entities inherit `Entity`; equality uses `Id + concrete type`. `Id` is a `Guid` generated client-side by the factory, so identity exists before `SaveChanges()`.
 
-4. **The authorization/invariant split (important — will drive Application
-   layer design):**
-   - Entities enforce invariants **about themselves only** — rules
-     checkable with data the entity already has (e.g. "lenient deadline
-     must precede strict deadline," "can't complete an already-completed
-     task," "can't manage yourself").
-   - Entities do **not** know about the *current caller* or *other
-     entities' state*. Two examples of things deliberately left out of
-     Domain, to be handled in Application:
-     - **"Only the creating master may reassign/edit/delete this task"**
-       — needs to know who's asking → resource-based ASP.NET Core
-       authorization handler.
-     - **"No cycles across the whole manager hierarchy"** (A manages B
-       manages A) — needs to walk other `User` rows → a check inside the
-       command handler that creates/updates `ManagerId`, with repository
-       access. `User.AssignManager()` only catches the single-hop case
-       (self-management), which it *can* check in isolation.
-   - This split is what keeps every entity trivially unit-testable with
-     zero mocking.
+4. **Authorization vs. invariant split.**
+   - Domain enforces rules an entity can verify from its own state.
+   - Caller-aware authorization and cross-entity checks belong in Application.
+   - Examples: "only the creating master can edit/delete" needs caller identity; manager-cycle detection needs other users. `User.AssignManager()` only prevents direct self-management.
+   - This keeps Domain independent and unit-testable without mocks.
 
-5. **Full-replace over partial-update logic in entities.** Discussed and
-   decided explicitly: methods like `TaskItem.UpdateDetails(title,
-   description, priority)` always set exactly what they're given — they do
-   **not** try to infer "was this field omitted vs. explicitly cleared."
-   That inference (PATCH semantics: distinguishing "field not sent" from
-   "field sent as empty/null") is an **Application-layer concern**, to be
-   resolved in the command handler using the incoming DTO/command shape
-   (e.g. an `IsDescriptionProvided` flag, or an `Optional<T>` wrapper),
-   before calling the entity method with final resolved values. Putting
-   that inference inside the entity was tried and reverted — it silently
-   broke the ability to ever clear `TaskItem.Description` once set,
-   because blank and omitted were indistinguishable. **Follow this pattern
-   for any future "partial update" command handler.**
+5. **Full-replace entity updates.** `UpdateDetails(...)` sets exactly the values passed. PATCH semantics ("omitted" vs. "explicitly cleared") are resolved in Application using the command/DTO and `Optional<T>` before calling the entity.
 
-6. **`TaskItem`, not `Task`.** Avoids colliding with
-   `System.Threading.Tasks.Task`.
+6. **`TaskItem`, not `Task`.** Avoids collision with `System.Threading.Tasks.Task`.
 
-7. **Soft delete, not hard delete**, for `TaskItem` (see §4). Decided
-   because `NotificationTriggerEvent.Deleted` implies a notification needs
-   to fire *after* deletion, and `NotificationLog` rows reference `TaskId`
-   for audit — both break under a hard delete.
+7. **Soft delete for tasks.** Required because deleted tasks can generate notifications and `NotificationLog`/`NotificationRule` retain `TaskId`. Rules are intentionally retained on soft delete so `Restore()` brings reminder configuration back. EF cascade delete only matters for manual/hard DB cleanup, not normal `TaskItem.Delete()`.
+
+8. **Clock supplied by caller.** `TaskItem.CreatedAt` is passed to `Create(..., createdAtUtc)` by Application's `IDateTime`; Domain never calls `DateTime.UtcNow`. This keeps behavior deterministic/testable. `NotificationLog.RecordAttempt()` follows the same principle with `SentAt`.
 
 ---
 
 ## 3. Entities
 
-### `User`
+### User
+
 | Field | Type | Notes |
 |---|---|---|
-| `Id` | `Guid` | from `Entity` base |
-| `Name` | `string` | required |
-| `Email` | `string` | required, validated against a pragmatic regex (not full RFC 5322) |
-| `PhoneNumber` | `string` | required |
-| `ManagerId` | `Guid?` | null = no manager (top-level master) |
-| `IsSystemAdmin` | `bool` | unrelated to manager hierarchy; full read access for support/debug/demo only |
+| `Id` | `Guid` | From `Entity` |
+| `Name` | `string` | Required |
+| `Email` | `string` | Required; pragmatic regex validation |
+| `PhoneNumber` | `string` | Required; India-only, exactly 10 digits: `^d{10}$`. Application validates; DB `HasMaxLength(10)` is a backstop |
+| `PasswordHash` | `string` | BCrypt hash; never plain password |
+| `ManagerId` | `Guid?` | `null` = no manager/top-level master |
+| `IsSystemAdmin` | `bool` | Independent of hierarchy; full read access for support/debug/demo |
+| `IsActive` | `bool` | Inactive users cannot be acted on or receive notifications |
 
-Methods: `Create(Name, email, phoneNumber)` (factory) ·
-`UpdateContactDetails(...)` · `AssignManager(User manager)` (throws
-`SelfManagementException` if `manager.Id == this.Id`) · `RemoveManager()` ·
-`PromoteToSystemAdmin()` / `DemoteFromSystemAdmin()` ·
-`IsDirectManagerOf(User worker)` — predicate for the future
-resource-based authorization handler; implements the **direct-only,
-non-transitive** access rule from `project-context.md`.
+Methods:
+- `Create(name, email, phoneNumber, passwordHash)`
+- `UpdateContactDetails(...)`
+- `AssignManager(User manager)` — throws `SelfManagementException` for self-management
+- `RemoveManager()`
+- `PromoteToSystemAdmin()` / `DemoteFromSystemAdmin()`
+- `DeactivateUser()` / `ReactivateUser()`
+- `IsDirectManagerOf(User worker)` — supports direct-only, non-transitive authorization
 
-### `TaskItem`
+### TaskItem
+
 | Field | Type | Notes |
 |---|---|---|
-| `Id` | `Guid` | |
-| `Title` | `string` | required |
-| `Description` | `string?` | optional |
-| `Status` | `TaskItemStatus` | see state machine below |
-| `Priority` | `TaskPriority?` | optional |
-| `LenientDeadline` | `DateTime` | must be < `StrictDeadline` |
-| `StrictDeadline` | `DateTime` | |
-| `IsRepetitive` | `bool` | |
-| `CreatedByUserId` | `Guid` | the owning master |
-| `AssignedToUserId` | `Guid` | may equal `CreatedByUserId` |
-| `IsDeleted` | `bool` | soft-delete flag |
-| `DeletedAt` | `DateTime?` | |
+| `Id` | `Guid` | Identity |
+| `Title` | `string` | Required |
+| `Description` | `string?` | Optional |
+| `Status` | `TaskItemStatus` | State machine below |
+| `Priority` | `TaskPriority?` | Optional |
+| `LenientDeadline` | `DateTime` | Must be `< StrictDeadline`; UTC |
+| `StrictDeadline` | `DateTime` | UTC |
+| `IsRepetitive` | `bool` | Informational; deliberately independent of `NotificationRule.RepeatMode` |
+| `CreatedByUserId` | `Guid` | Owning master |
+| `AssignedToUserId` | `Guid` | May equal creator |
+| `IsDeleted` | `bool` | Soft-delete flag |
+| `DeletedAt` | `DateTime?` | Soft-delete timestamp |
+| `CreatedAt` | `DateTime` | UTC; supplied to factory |
 
-**Status state machine:**
+**State machine**
+
+```text
+Pending  -> Completed   (MarkCompleted)
+Pending  -> Halted      (Halt)
+Pending  -> Overdue     (MarkOverdue; system/Hangfire)
+Halted   -> Pending     (Resume)
+Halted   -> Overdue     (MarkOverdue)
+Overdue  -> Completed   (MarkCompleted; late completion is valid)
+Completed -> terminal
 ```
-Pending    -> Completed   (MarkCompleted)
-Pending    -> Halted      (Halt)
-Pending    -> Overdue     (MarkOverdue — system/Hangfire only)
-Halted     -> Pending     (Resume)
-Halted     -> Overdue     (MarkOverdue)
-Overdue    -> Completed   (MarkCompleted — "late but done" is valid, no double-punishment)
-Completed  -> (terminal)
-```
 
-Methods: `Create(...)` (factory) · `UpdateDetails(title, description,
-priority)` (full-replace, see §2.5) · `UpdateDeadlines(...)` ·
-`SetRepetitive(bool)` · `Reassign(newAssignedToUserId)` (blocked on
-`Completed` tasks — throws `TaskAlreadyCompletedException`, **not**
-`InvalidTaskStateTransitionException`, since no status transition is
-involved — this was a bug, fixed) · `MarkCompleted()` · `Halt()` ·
-`Resume()` · `MarkOverdue()` (idempotent, system-only, silently no-ops on
-already-terminal or deleted tasks — the query feeding the Hangfire job
-should already filter `IsDeleted == false`, this is a defensive second
-line) · `Delete()` (soft delete — **allowed from any status including
-Completed**, per explicit requirement) · `Restore()` (status is preserved
-exactly as it was at deletion time).
+Methods:
+- `Create(..., createdAtUtc)`
+- `UpdateDetails(title, description, priority)`
+- `UpdateDeadlines(...)`
+- `SetRepetitive(bool)`
+- `Reassign(newAssignedToUserId)`
+- `MarkCompleted()`, `Halt()`, `Resume()`, `MarkOverdue()`
+- `Delete()` — soft delete, allowed from every status including `Completed`
+- `Restore()` — restores deletion while preserving the previous status
+- `IsPastStrictDeadline(asOfUtc)` / `IsPastLenientDeadline(asOfUtc)`
 
-Every state-changing method calls a private `EnsureNotDeleted()` guard
-first (throws `TaskAlreadyDeletedException`) — a deleted task is inert
-until `Restore()`d.
+Rules:
+- Every state-changing method first calls `EnsureNotDeleted()`; deleted tasks are inert until restored.
+- `Reassign()` on `Completed` throws `TaskAlreadyCompletedException`.
+- `UpdateDetails`, `UpdateDeadlines`, and `SetRepetitive` are allowed only for `Pending`/`Halted`.
+  - `Completed` → `TaskAlreadyCompletedException`
+  - `Overdue` → `TaskAlreadyOverdueException`
+- `MarkOverdue()` is idempotent and silently does nothing for already-terminal/deleted tasks; Hangfire should already filter deleted tasks, making this defensive.
+- Bulk operations are Application concerns (`DeleteTasksByStatusCommand` loops over entity methods; this is built).
 
-Also: `IsPastStrictDeadline(DateTime asOfUtc)` / `IsPastLenientDeadline(...)`
-— convenience predicates for the future Hangfire scan / query handlers.
+### NotificationRule
 
-**Deferred to Application layer:** bulk operations (e.g. "delete all
-Pending + Completed tasks for this master") — an entity only represents
-one task, so this will be a `DeleteTasksByStatusCommand` handler that
-fetches matching tasks and calls `.Delete()` on each (or a bulk EF Core
-`ExecuteUpdateAsync` if per-task notification triggering isn't needed for
-that path).
-
-### `NotificationRule`
-**Revised mid-project (see `application_layer.md` for the full reasoning).**
-Configuration for "when should this offset-based reminder fire." One rule
-belongs to exactly one `TaskId`. **Immediate events no longer get a rule at
-all** — they dispatch directly from the Application layer. Only the 3
-offset-based trigger events may ever have a `NotificationRule`.
+One rule belongs to one task. **Immediate events never have rules; only the three offset-based events do.**
 
 | Field | Type |
 |---|---|
 | `TaskId` | `Guid` |
-| `TriggerEvent` | `NotificationTriggerEvent` — guarded to offset-based values only, see below |
-| `OffsetValue` | `int?` — always required (positive) |
-| `OffsetUnit` | `NotificationOffsetUnit?` — always required |
+| `TriggerEvent` | `NotificationTriggerEvent` |
+| `OffsetValue` | `int?` — required and positive |
+| `OffsetUnit` | `NotificationOffsetUnit?` — required |
 | `RepeatMode` | `NotificationRepeatMode` |
 
-`Channel` field **removed** — channel selection is fully policy-driven now
-(`ChannelPolicy` in Application), not stored per rule. The old field is
-left commented out in the source intentionally, as a marker in case this
-decision is revisited (e.g. if SMS or per-user channel preference returns).
+`Channel` was deliberately removed; channel selection is Application policy (`ChannelPolicy`). The old field remains commented in source only as a future marker.
 
-`ValidateTriggerEvent` (used by both `Create` and `UpdateSchedule`) now
-enforces, in one place:
-- `TriggerEvent` must be one of `AfterCreationOffset`, `BeforeLenientDeadline`,
-  `BeforeStrictDeadline` — anything else (an immediate/system event) throws
-  `InvalidNotificationRuleException`.
-- `OffsetValue` (positive) and `OffsetUnit` are always required — there's no
-  more "immediate, no offset" branch since immediate events never reach this
-  entity.
-- `RepeatMode.Repeat` is only valid when `TriggerEvent == AfterCreationOffset`
-  — the two deadline-warning triggers must be `Once`.
+`ValidateTriggerEvent()` is shared by `Create()` and `UpdateSchedule()`:
+- Trigger must be `AfterCreationOffset`, `BeforeLenientDeadline`, or `BeforeStrictDeadline`.
+- `OffsetValue > 0` and `OffsetUnit` are always required.
+- `Repeating` is valid only for `AfterCreationOffset`; deadline warnings are `Once`.
 
-Methods: `Create(...)` · `UpdateSchedule(...)` ·
-`CalculateFireTime(DateTime referencePointUtc)` — pure calculation turning
-`OffsetValue`/`OffsetUnit` into a concrete UTC fire time relative to a
-reference point the caller supplies (e.g. task's `CreatedAt` or
-`StrictDeadline`); "Before" triggers subtract the offset, "After" triggers
-add it. The `default` branch now throws (unreachable given the guard above)
-instead of returning `null`.
+`CalculateFireTime(referencePointUtc)` is pure:
+- `Before...` subtracts the offset.
+- `After...` adds it.
+- Unexpected/default trigger values throw.
 
-### `NotificationLog`
-Append-only audit record of one send attempt. Deliberately minimal editing
-API — a log entry represents something that already happened.
+**Uniqueness:** one rule per `(TaskId, TriggerEvent)`. This is intentionally **not Domain logic** because it requires sibling rows. Application checks it and the DB has a unique index.
+
+### NotificationLog
+
+Append-only audit record of one notification attempt.
 
 | Field | Type |
 |---|---|
-| `NotificationRuleId` | `Guid?` — nullable; null for immediate/system dispatches that have no rule |
+| `NotificationRuleId` | `Guid?` — null for immediate/system dispatches |
 | `TaskId` | `Guid` |
 | `RecipientUserId` | `Guid` |
 | `Channel` | `NotificationChannel` |
 | `SentAt` | `DateTime` |
 | `DeliveryStatus` | `NotificationDeliveryStatus` |
+| `TriggerEvent` | `NotificationTriggerEvent` |
 
-Methods: `RecordAttempt(...)` (factory — starts as `Pending`) ·
-`MarkSent()` · `MarkFailed()`. Two-step Pending→Sent/Failed flow exists
-because async providers (SignalR hub, email/SMS gateway) don't always give
-a synchronous result.
+Methods:
+- `RecordAttempt(...)` — factory; starts `Pending`, receives `SentAt`, `triggerEvent`, and the actual `notificationRuleId`
+- `MarkSent()`
+- `MarkFailed()`
 
-Purpose (from `project-context.md`): audit trail + duplicate-send
-prevention for `Repeating` rules (check for an existing log entry in the
-current window before firing again).
+The `NotificationRuleId` bug is important: it was once hardcoded to `null`, causing the offset scanner's dedupe check to fail and `Once` rules to refire. It is now correctly recorded.
+
+Logs remain append-only; stale logs are not auto-deleted when deadlines change. They provide audit history and dedupe support for repeating/offset notifications.
 
 ---
 
@@ -254,71 +198,66 @@ current window before firing again).
 |---|---|
 | `TaskItemStatus` | `Pending, Completed, Halted, Overdue` |
 | `TaskPriority` | `Low, Medium, High, Critical` |
-| `NotificationTriggerEvent` | `Created, Updated, Deleted, Completed, AfterCreationOffset, BeforeLenientDeadline, BeforeStrictDeadline, StrictDeadlinePassed` — only the last 3 (offset-based) are valid on a `NotificationRule`; the rest are immediate/system events, see `application_layer.md` |
-| `NotificationOffsetUnit` | `Hours, Days, Weeks` |
+| `NotificationTriggerEvent` | `Created, Updated, Deleted, Completed, AfterCreationOffset, BeforeLenientDeadline, BeforeStrictDeadline, StrictDeadlinePassed` |
+| `NotificationOffsetUnit` | `Minutes, Hours, Days, Weeks` |
 | `NotificationRepeatMode` | `Once, Repeating` |
 | `NotificationChannel` | `AppNotification, Email, Sms` |
 | `NotificationDeliveryStatus` | `Pending, Sent, Failed` |
+
+Only `AfterCreationOffset`, `BeforeLenientDeadline`, and `BeforeStrictDeadline` are valid `NotificationRule` triggers; the others are immediate/system events.
+
+**Persistence rule:** all current enums are stored as strings using `HasConversion<string>()`. Therefore declaration order does not affect existing data. This was specifically important when `Minutes` was inserted into `NotificationOffsetUnit`. Do not assume future enums have this protection unless the same conversion is configured. `NotificationLog.TriggerEvent` was once missing this conversion and stored raw integers; it was fixed.
 
 ---
 
 ## 5. Exceptions
 
-All inherit `DomainException` (abstract base, itself inheriting `Exception`)
-— the future global exception-handling middleware in the API layer should
-catch `DomainException` specifically and translate it to a 400/RFC 7807
-ProblemDetails response, letting unexpected exceptions surface as 500s.
+All Domain exceptions inherit `DomainException` → `Exception`. Presentation's global exception middleware maps Domain exceptions to HTTP 400 ProblemDetails; unexpected exceptions become 500s.
 
-| Exception | Thrown when |
+| Exception | Meaning |
 |---|---|
 | `InvalidTaskDeadlineException` | `LenientDeadline >= StrictDeadline` |
-| `InvalidTaskStateTransitionException` | An invalid `TaskItemStatus` transition is attempted (e.g. completing an already-completed task, resuming a non-halted task) |
-| `TaskAlreadyDeletedException` | Any state-changing method called on a soft-deleted task |
-| `TaskNotDeletedException` | `Restore()` called on a task that isn't deleted |
-| `TaskAlreadyCompletedException` | `Reassign()` called on a `Completed` task |
-| `SelfManagementException` | A user assigned as their own manager |
-| `InvalidNotificationRuleException` | Offset config doesn't match the trigger event's shape, or `RepeatMode.Repeating` used with a one-time trigger |
+| `InvalidTaskStateTransitionException` | Invalid status transition |
+| `TaskAlreadyDeletedException` | State-changing operation on a deleted task |
+| `TaskNotDeletedException` | `Restore()` on a non-deleted task |
+| `TaskAlreadyCompletedException` | Reassign/edit operation blocked by `Completed` |
+| `TaskAlreadyOverdueException` | Edit operation blocked by `Overdue` |
+| `SelfManagementException` | User assigned themselves as manager |
+| `InvalidNotificationRuleException` | Invalid trigger/offset/repeat combination |
 
-`ArgumentException`/`ArgumentNullException` are used (not custom domain
-exceptions) for basic input shape problems — blank required strings, empty
-Guids, null references — since those are argument-contract violations, not
-business-rule violations.
+`ArgumentException`/`ArgumentNullException` handle basic argument-contract problems such as blank required strings, empty Guids, or null references.
 
----
+These are **Application**, not Domain, exceptions but are listed because the same middleware maps them:
+- `NotFoundException` → 404
+- `ForbiddenAccessException` → 403
+- `UnauthorizedException` → 401
+- `ConflictException` → 409 (e.g. duplicate notification rule/email)
 
-## 6. Explicitly deferred / not yet built (by design)
-
-- **Domain events** (e.g. publishing a `TaskCompletedEvent` from
-  `MarkCompleted()`). Nothing currently requires them — notification
-  dispatch is planned as a Hangfire recurring scan over `NotificationRule`s
-  reading current state, not an in-process event reaction. Revisit only if
-  that dispatch design changes; don't add "just in case."
-  **Update:** this was reconsidered mid-project when building the
-  Application-layer notification dispatch and explicitly rejected again —
-  direct `INotificationDispatcher` calls from Task command handlers were
-  judged the right-sized solution for the current handful of immediate
-  events. See `application_layer.md` for the reasoning.
-- **Cross-entity / caller-aware authorization** — see §2.4. Lives in
-  Application (MediatR handlers + a resource-based ASP.NET Core
-  authorization handler for the master/worker relationship check).
-- **Partial-update (PATCH) resolution logic** — see §2.5. Lives in
-  Application, resolved per-command before calling entity methods.
-- **Bulk operations** (`DeleteTasksByStatusCommand` and similar) — Application layer, loops over single-entity domain methods.
-- **Cycle detection across the manager hierarchy** — Application layer, needs repository access to walk `ManagerId` chains beyond the single-hop self-check `AssignManager()` already does.
-- **`TaskManager.Domain.Tests`** (xUnit) — not yet created. Recommended next
-  step alongside or before Application, to lock in the invariants and state
-  machine above with tests before more layers are built on top.
-- **Application, Infrastructure, API projects** — not started.
+**Future cleanup note:** `TaskAlreadyCompletedException` and `TaskAlreadyOverdueException` are both "operation blocked by current status" errors rather than transition errors. They could eventually be consolidated into `InvalidTaskStateException`; this has intentionally not been done yet.
 
 ---
 
-## 7. How to use this doc in a future chat
+## 6. What is deliberately outside Domain
 
-Paste or attach this file alongside `project-context.md`. When proposing
-Application-layer code (commands, queries, handlers, repository
-interfaces, the authorization handler), check new decisions against §2 and
-§6 above — anything that looks like it belongs in Domain instead (a new
-invariant an entity could check about itself) should be flagged rather
-than implemented ad hoc in a handler, and vice versa (anything needing
-caller identity or cross-entity/repository access does **not** belong back
-in Domain).
+- **Domain events:** considered and rejected twice. Current notification design uses direct `INotificationDispatcher` calls from Task command handlers; do not add events without a new requirement.
+- **Caller-aware authorization:** Application handlers/resource checks, not entities.
+- **Manager-cycle detection:** Application `IManagerHierarchyService`; built.
+- **PATCH/partial-update resolution:** Application `Optional<T>`; built.
+- **Bulk operations:** Application; built via `DeleteTasksByStatusCommand`.
+- **Notification-rule uniqueness:** Application + DB unique index; built.
+- **Refresh tokens, SignalR, Redis:** not Domain concerns.
+- **`TaskManager.Domain.Tests`:** still not created. This is the main outstanding Domain task; the state machine and invariants above form the test plan. Strongly recommended before frontend work progresses further.
+
+---
+
+## 7. Rules for future Domain changes
+
+When adding or changing Domain code:
+
+1. Check the invariant/authorization split first.
+2. Preserve factory-only construction and caller-supplied clock values.
+3. Prefer named business methods over setters.
+4. Keep cross-entity/database checks out of entities.
+5. Check the existing state machine before adding a transition.
+6. Check `project-context.md` and the other layer docs before changing notification behavior.
+7. If something appears to belong in Domain but currently lives in Application (or vice versa), flag it and discuss it rather than silently moving it. Existing decisions such as rule uniqueness, edit restrictions, cycle detection, and notification dispatch were deliberate.
