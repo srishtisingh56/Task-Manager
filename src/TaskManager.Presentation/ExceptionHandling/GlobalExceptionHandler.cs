@@ -19,10 +19,10 @@ public sealed class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logge
             var validationProblem = new ValidationProblemDetails(errors)
             {
                 Status = StatusCodes.Status400BadRequest,
-                Title = "One or more validation errors occurred.",
+                // Title = "One or more validation errors occurred.",
                 Instance = httpContext.Request.Path
             };
-
+            
             httpContext.Response.StatusCode = StatusCodes.Status400BadRequest;
             await httpContext.Response.WriteAsJsonAsync(validationProblem, cancellationToken);
             return true;

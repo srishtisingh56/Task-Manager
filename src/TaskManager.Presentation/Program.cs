@@ -41,7 +41,16 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 
 builder.Services.AddAuthorization();
+const string FrontendPolicy = "Frontend";
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(FrontendPolicy, policy => policy
+        .WithOrigins(builder.Configuration.GetSection("Cors:Origins").Get<string[]>()
+                     ?? ["http://localhost:5173"])
+        .AllowAnyHeader()
+        .AllowAnyMethod());
+});
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 
@@ -64,10 +73,9 @@ if (app.Environment.IsDevelopment())
     app.UseHangfireDashboard("/hangfire"); // dev only; add an   admin auth filter before deploying
 }
 
+app.UseCors(FrontendPolicy);
 app.UseExceptionHandler();
-
 app.UseHttpsRedirection();
-
 app.UseAuthentication();
 app.UseAuthorization();
 

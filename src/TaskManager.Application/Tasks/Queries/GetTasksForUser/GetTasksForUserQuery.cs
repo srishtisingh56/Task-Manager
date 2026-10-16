@@ -9,6 +9,7 @@ namespace TaskManager.Application.Tasks.Queries.GetTasksForUser
     public sealed record GetTasksForUserQuery(
         Guid? TargetUserId,
         TaskItemStatus? Status,
+        TaskRelationFilter? Relation,
         int PageNumber = 1,
         int PageSize = 10
     ) : IRequest<PagedResult<TaskDto>>;

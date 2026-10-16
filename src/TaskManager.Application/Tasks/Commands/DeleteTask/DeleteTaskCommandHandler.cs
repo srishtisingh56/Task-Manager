@@ -29,7 +29,6 @@ namespace TaskManager.Application.Tasks.Commands.DeleteTaskCommand
 
             task.Delete();
             await db.SaveChangesAsync(ct);
-            
         
             await notificationDispatcher.DispatchAsync(
                 taskId: task.Id,

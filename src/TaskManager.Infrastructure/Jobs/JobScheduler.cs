@@ -13,12 +13,12 @@ namespace TaskManager.Infrastructure.Jobs
         manager.AddOrUpdate<OverdueTaskScanJob>(
             "overdue-task-scan",
             job => job.RunAsync(CancellationToken.None),
-            "*/1 * * * *");
+            "*/5 * * * *");
 
         manager.AddOrUpdate<OffsetNotificationScanJob>(
             "offset-notification-scan",
             job => job.RunAsync(CancellationToken.None),
-            "*/1 * * * *");
+            "*/5 * * * *");
     }
 }
 }

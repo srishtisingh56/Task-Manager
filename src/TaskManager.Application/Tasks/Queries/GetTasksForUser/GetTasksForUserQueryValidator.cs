@@ -23,6 +23,12 @@ namespace TaskManager.Application.Tasks.Queries.GetTasksForUser
                     .IsInEnum()
                     .WithMessage("Invalid status value.");
             });
+
+            When(x=>x.Relation.HasValue,()=> {
+                RuleFor(x => x.Relation!.Value)
+                    .IsInEnum()
+                    .WithMessage("Invalid relation value.");
+            });
         }
     }
 }

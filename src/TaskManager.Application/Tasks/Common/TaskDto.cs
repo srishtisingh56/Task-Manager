@@ -18,6 +18,8 @@ namespace TaskManager.Application.Tasks.Common
      bool IsRepetitive,
      Guid CreatedByUserId,
      Guid AssignedToUserId,
+     string? CreatedByName = null,
+     string? AssignedToName = null,
      string? Warning = null
     )
     {

@@ -14,11 +14,12 @@ namespace TaskManager.Application.Users.Commands.Login
     {
         public async Task<AuthResultDto> Handle(LoginCommand request, CancellationToken ct)
         {
-            var user = await db.Users.FirstOrDefaultAsync(u => u.Email == request.Email, ct);
+            var user = await db.Users.FirstOrDefaultAsync(u => u.Email == request.Email, ct) 
+                ?? throw new UnauthorizedException("Invalid email or password.");
 
             // Same generic message for "no such user" and "wrong password" — avoids leaking which emails are registered.
-            if (user is null || !passwordHasher.Verify(request.Password, user.PasswordHash))
-                throw new UnauthorizedException("Invalid email or password.");
+            if (!passwordHasher.Verify(request.Password, user.PasswordHash))
+                throw new UnauthorizedException("Invalid password.");
 
             if (!user.IsActive)
                 throw new UnauthorizedException("This account has been deactivated.");

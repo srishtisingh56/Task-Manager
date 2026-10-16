@@ -12,7 +12,7 @@ namespace TaskManager.Presentation.Controllers
     public class AuthController(ISender mediator,  ICurrentUserService currentUser) : ControllerBase
     {
         [AllowAnonymous]
-        [HttpPost]
+        [HttpPost("login")]
         public async Task<IActionResult> Login(LoginCommand command, CancellationToken ct)
         {
             var result = await mediator.Send(command, ct);
