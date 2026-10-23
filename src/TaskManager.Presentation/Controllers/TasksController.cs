@@ -77,6 +77,6 @@ namespace TaskManager.Presentation.Controllers
 
         [HttpPost("bulk-delete")]
         public async Task<IActionResult> BulkDelete(DeleteTasksByStatusCommand command, CancellationToken ct)
-        { await mediator.Send(command, ct); return NoContent(); }
+            =>  Ok(new { deletedCount = await mediator.Send(command, ct) });
     }
 }

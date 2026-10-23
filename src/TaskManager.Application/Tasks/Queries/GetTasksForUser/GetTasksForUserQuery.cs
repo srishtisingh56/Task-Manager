@@ -11,7 +11,7 @@ namespace TaskManager.Application.Tasks.Queries.GetTasksForUser
         TaskItemStatus? Status,
         TaskRelationFilter? Relation,
         int PageNumber = 1,
-        int PageSize = 10
+        int PageSize = 5
     ) : IRequest<PagedResult<TaskDto>>;
 
 }
