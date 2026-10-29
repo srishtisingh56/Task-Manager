@@ -18,7 +18,7 @@ namespace TaskManager.Presentation.Controllers
     [Route("api/users")]
     public class UsersController(ISender mediator) : ControllerBase
     {
-        //WORKS
+        
         [HttpPost]
         public async Task<IActionResult> Create(CreateUserCommand command, CancellationToken ct)
         {
@@ -37,37 +37,41 @@ namespace TaskManager.Presentation.Controllers
         [HttpGet("me/workers")]
         public async Task<IActionResult> MyWorkers(CancellationToken ct)
             => Ok(await mediator.Send(new GetMyDirectWorkersQuery(), ct));
-
+        
         [HttpPatch("{id:guid}/contact")]
-        public async Task<IActionResult> UpdateContact(Guid id, UpdateContactDetailsCommand body, CancellationToken ct)
-        { await mediator.Send(new UpdateContactDetailsCommand(id,body.Name, body.Email, body.PhoneNumber), ct); return NoContent(); }
-
-        //WORKS
+        public async Task<IActionResult> UpdateContact(Guid id,UpdateContactDetailsCommand body,CancellationToken ct)
+        {
+            var command = body with
+            {
+                UserId = id
+            };
+            return Ok(await mediator.Send(command, ct));
+        }
         [HttpPut("{id:guid}/manager")]  
         public async Task<IActionResult> AssignManager(Guid id, AssignManagerCommand body, CancellationToken ct)
         {
             var result = await mediator.Send(new AssignManagerCommand(id, body.ManagerId), ct);
             return Ok(result);
         }
-
+        
         [HttpDelete("{id:guid}/manager")]
         public async Task<IActionResult> RemoveManager(Guid id, CancellationToken ct)
-        { await mediator.Send(new RemoveManagerCommand(id), ct); return NoContent(); }
+            => Ok(await mediator.Send(new RemoveManagerCommand(id), ct));
 
         [HttpPost("{id:guid}/promote")]
         public async Task<IActionResult> Promote(Guid id, CancellationToken ct)
-        { await mediator.Send(new PromoteToSystemAdminCommand(id), ct); return NoContent(); }
+            => Ok(await mediator.Send(new PromoteToSystemAdminCommand(id), ct));
 
         [HttpPost("{id:guid}/demote")]
         public async Task<IActionResult> Demote(Guid id, CancellationToken ct)
-        { await mediator.Send(new DemoteFromSystemAdminCommand(id), ct); return NoContent(); }
-
+            => Ok(await mediator.Send(new DemoteFromSystemAdminCommand(id), ct));
+        
         [HttpPost("{id:guid}/deactivate")]
         public async Task<IActionResult> Deactivate(Guid id, CancellationToken ct)
-        { await mediator.Send(new DeactivateUserCommand(id), ct); return NoContent(); }
+            => Ok(await mediator.Send(new DeactivateUserCommand(id), ct));
 
         [HttpPost("{id:guid}/reactivate")]
         public async Task<IActionResult> Reactivate(Guid id, CancellationToken ct)
-        { await mediator.Send(new ReactivateUserCommand(id), ct); return NoContent(); }
+            => Ok(await mediator.Send(new ReactivateUserCommand(id), ct));
     }
 }

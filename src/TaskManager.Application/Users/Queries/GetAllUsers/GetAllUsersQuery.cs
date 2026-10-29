@@ -9,6 +9,7 @@ using TaskManager.Application.Users.Common;
 namespace TaskManager.Application.Users.Queries.GetAllUsers
 {
    public sealed record GetAllUsersQuery(
+    bool? IsActive = null,
     int PageNumber = 1,
     int PageSize = 10) : IRequest<PagedResult<UserDto>>;
 }

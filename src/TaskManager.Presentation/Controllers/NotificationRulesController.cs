@@ -34,7 +34,7 @@ namespace TaskManager.Presentation.Controllers
 
         [HttpPatch("notification-rules/{id:guid}")]
         public async Task<IActionResult> Update(Guid id, UpdateScheduleCommand body, CancellationToken ct)
-        { await mediator.Send(body with { RuleId = id }, ct); return NoContent(); }
+        => Ok(await mediator.Send(body with { RuleId = id }, ct));
 
         [HttpDelete("notification-rules/{id:guid}")]
         public async Task<IActionResult> Delete(Guid id, CancellationToken ct)

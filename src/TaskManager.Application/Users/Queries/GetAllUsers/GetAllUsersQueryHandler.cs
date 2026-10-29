@@ -18,13 +18,16 @@ namespace TaskManager.Application.Users.Queries.GetAllUsers
         {
             throw new ForbiddenAccessException("Only a system admin can view all users.");
         }
-
         var query = db.Users.AsNoTracking();
 
+        if(request.IsActive.HasValue)
+        {
+            query = query.Where(u => u.IsActive == request.IsActive.Value);
+        }
+        
         var totalCount = await query.CountAsync(ct);
 
         var items = await query
-            .Where(u => u.IsActive)
             .OrderBy(u => u.Name)
             .Skip((request.PageNumber - 1) * request.PageSize)
             .Take(request.PageSize)

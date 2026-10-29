@@ -26,7 +26,7 @@ namespace TaskManager.Application.NotificationRules.Commands.CreateNotificationR
 
             if (alreadyExists)
             {
-                throw new ConflictException($"A {request.TriggerEvent} notification rule already exists for this task. Update or delete the existing one instead.");
+                throw new ConflictException($"{request.TriggerEvent} notification rule already exists for this task. Update or delete the existing one instead.");
             }
             var rule = Domain.Entities.NotificationRule.Create(
                 taskId: request.TaskId,

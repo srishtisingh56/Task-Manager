@@ -25,7 +25,7 @@ namespace TaskManager.Application.NotificationRules.Queries.GetNotificationRuleB
             // Notification rules are the creator's reminder configuration, not assignee-facing.
             if (task.CreatedByUserId != currentUser.UserId && !currentUser.IsSystemAdmin)
             {
-                throw new ForbiddenAccessException("Only the creator of the task can view its notification rules.");
+                throw new ForbiddenAccessException("Only the creator of the task or system admin can view its notification rules.");
             }
 
             return NotificationRuleDto.FromEntity(rule);

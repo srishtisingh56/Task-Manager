@@ -28,10 +28,10 @@ namespace TaskManager.Application.NotificationRules.Queries.GetNotificationRules
             // Notification rules are the creator's reminder configuration, not assignee-facing.
             if (task.CreatedByUserId != currentUser.UserId && !currentUser.IsSystemAdmin)
             {
-                throw new ForbiddenAccessException("Only the creator of the task can view its notification rules.");
+                throw new ForbiddenAccessException("Only the creator of the task or system admin can view its notification rules.");
             }
 
-            var query = db.NotificationRules.AsNoTracking().Where(r => r.TaskId == request.TaskId);
+            var query = db.NotificationRules.AsNoTracking().Where(r => r.TaskId == request.TaskId); 
 
             var totalCount = await query.CountAsync(ct);
             var items = await query
