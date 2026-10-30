@@ -13,6 +13,8 @@ namespace TaskManager.Application.NotificationLogs.Common
     NotificationTriggerEvent TriggerEvent, 
     NotificationChannel Channel,
     NotificationDeliveryStatus DeliveryStatus, 
+    string? RecipientName,
+    string? TaskCreatorName,
     DateTime SentAt
     );
 }

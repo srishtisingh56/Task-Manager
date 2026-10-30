@@ -18,8 +18,8 @@ namespace TaskManager.Application.NotificationLogs.Queries.GetNotificationLogs
             var query = from l in db.NotificationLogs.AsNoTracking()
             join t in db.TaskItems on l.TaskId equals t.Id
             // Deliberately NOT filtering t.IsDeleted (audit trail)
-            where isAdmin || t.CreatedByUserId == me || l.RecipientUserId == me
-            select new { l, t.Title };
+            where isAdmin || l.RecipientUserId == me
+            select new { l, t.Title,t.CreatedByUserId };
 
             if (request.TaskId.HasValue)
                 query = query.Where(x => x.l.TaskId == request.TaskId.Value);
@@ -39,7 +39,10 @@ namespace TaskManager.Application.NotificationLogs.Queries.GetNotificationLogs
                 .Skip((request.PageNumber - 1) * request.PageSize)
                 .Take(request.PageSize)
                 .Select(x => new NotificationLogDto(x.l.Id, x.l.TaskId, x.Title,
-                    x.l.TriggerEvent, x.l.Channel, x.l.DeliveryStatus, x.l.SentAt))
+                    x.l.TriggerEvent, x.l.Channel, x.l.DeliveryStatus,
+                    db.Users.Where(u=>u.Id == x.l.RecipientUserId).Select(u=>u.Name).FirstOrDefault(),
+                    db.Users.Where(u => u.Id == x.CreatedByUserId).Select(u => u.Name).FirstOrDefault(),
+                    x.l.SentAt))
                 .ToListAsync(ct);
 
             return new PagedResult<NotificationLogDto>(items, total, request.PageNumber, request.PageSize);
