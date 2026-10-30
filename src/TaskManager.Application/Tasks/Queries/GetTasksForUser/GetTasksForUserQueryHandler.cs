@@ -46,8 +46,8 @@ namespace TaskManager.Application.Tasks.Queries.GetTasksForUser
 
             var totalCount = await query.CountAsync(ct);
             var items = await query
-                .OrderBy(t=>t.StrictDeadline)
-                .ThenBy(t=>t.Id)
+                .OrderByDescending(t=>t.CreatedAt)
+                .ThenByDescending(t=>t.Id)
                 .Skip((request.PageNumber - 1) * request.PageSize)
                 .Take(request.PageSize)
                 .Select(t => new TaskDto(

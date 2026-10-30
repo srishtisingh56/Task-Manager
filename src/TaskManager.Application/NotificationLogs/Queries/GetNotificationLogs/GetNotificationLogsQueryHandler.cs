@@ -12,20 +12,32 @@ namespace TaskManager.Application.NotificationLogs.Queries.GetNotificationLogs
     {
         public async Task<PagedResult<NotificationLogDto>> Handle(GetNotificationLogsQuery request, CancellationToken ct)
         {
+            var me = currentUser.UserId;               // locals, so EF can translate them
+            var isAdmin = currentUser.IsSystemAdmin;
+
             var query = from l in db.NotificationLogs.AsNoTracking()
-                        join t in db.TaskItems on l.TaskId equals t.Id
-                        // Deliberately NOT filtering t.IsDeleted — audit trail should survive task deletion, per domain_layer.md 
-                        where currentUser.IsSystemAdmin
-                            || t.CreatedByUserId == currentUser.UserId
-                            || l.RecipientUserId == currentUser.UserId
-                        select new { l, t.Title };
+            join t in db.TaskItems on l.TaskId equals t.Id
+            // Deliberately NOT filtering t.IsDeleted (audit trail)
+            where isAdmin || t.CreatedByUserId == me || l.RecipientUserId == me
+            select new { l, t.Title };
 
             if (request.TaskId.HasValue)
                 query = query.Where(x => x.l.TaskId == request.TaskId.Value);
 
-            var ordered = query.OrderByDescending(x => x.l.SentAt);
+            if (request.OnlyMine)
+                query = query.Where(x => x.l.RecipientUserId == me);
+
+            if (request.Channel.HasValue)
+                query = query.Where(x => x.l.Channel == request.Channel.Value);
+
+            var ordered = query
+                .OrderByDescending(x => x.l.SentAt)
+                .ThenByDescending(x => x.l.Id);        // tie-breaker
+
             var total = await ordered.CountAsync(ct);
-            var items = await ordered.Skip((request.PageNumber - 1) * request.PageSize).Take(request.PageSize)
+            var items = await ordered
+                .Skip((request.PageNumber - 1) * request.PageSize)
+                .Take(request.PageSize)
                 .Select(x => new NotificationLogDto(x.l.Id, x.l.TaskId, x.Title,
                     x.l.TriggerEvent, x.l.Channel, x.l.DeliveryStatus, x.l.SentAt))
                 .ToListAsync(ct);

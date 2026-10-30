@@ -9,10 +9,10 @@ using TaskManager.Application.NotificationLogs.Queries.GetNotificationLogs;
 namespace TaskManager.Presentation.Controllers
 {
     [ApiController]
-    [Route("api/")]
+    [Route("api/notification-logs")]
     public class NotificationLogsController(ISender mediator): ControllerBase
     {
-        [HttpGet("logs")]
+        [HttpGet()]
         public async Task<IActionResult> Logs([FromQuery] GetNotificationLogsQuery query, CancellationToken ct)
             => Ok(await mediator.Send(query, ct));
     }
